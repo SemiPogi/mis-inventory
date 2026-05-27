@@ -93,6 +93,7 @@ Named in `tailwind.config.js` `theme.extend.keyframes` and `theme.extend.animati
 | `chart-draw`  | stroke-dashoffset L → 0                           | 1400ms ease-out                       |
 | `slide-in-right` | translateX(20px) opacity 0 → translateX(0) 1   | 350ms ease-out                        |
 | `pop-out`     | scale(1) opacity 1 → scale(.95) opacity 0         | 250ms ease-in                         |
+| `fade-out`    | opacity 1 → 0                                     | 200ms ease-in                         |
 
 Utility delay classes: `delay-0`, `delay-100`, `delay-200`, `delay-300`, `delay-400` (multiples of 100ms).
 
@@ -143,6 +144,8 @@ Bento grid:
 
 Numbers count up on first paint.
 
+**Controller change:** `DashboardController@index` currently provides `$totalInStock`, `$totalReleased`, `$pendingAck`, `$acknowledged`, `$pendingTransactions`. Add: `$weeklyActivity` (array of 7 daily release counts for the sparkline), `$topOffice` (string — office with most releases this month), `$topItem` (string — most-released item name this month).
+
 ### 5.3 Receive — `receive.blade.php`
 
 Single-column form on a max-width `<x-bento-card>`. All inputs swap to `<x-input>` / `<x-select>`. Submit uses `<x-button variant="primary">`. On success the inline banner is gone — controller flashes `success` to session, layout renders an `<x-toast>`. Form fades+slides up on load.
@@ -163,8 +166,10 @@ Card list instead of a table:
 ### 5.6 Transactions — `transactions.blade.php` + `transactions-show.blade.php`
 
 **Index:**
-- Sticky filter bar at top of the content area: date range, type (Receive/Release), status. Filters submit via GET to the existing controller.
+- Sticky filter bar at top of the content area: date range (`from`, `to`), type (Receive/Release), status (Pending/Acknowledged). Filters submit via GET to the existing controller.
 - Themed `<x-table>` below. Status column uses `<x-status-badge>`.
+
+**Controller change:** `TransactionController@index` accepts the new query params (`from`, `to`, `type`, `status`) and applies them to the existing query. Validation: dates parseable, type ∈ {receive,release}, status ∈ {pending,acknowledged}; invalid params are ignored.
 
 **Show:**
 - Two-column layout (`lg:grid-cols-3`): left `col-span-2` `<x-bento-card>` with transaction details, right `col-span-1` `<x-bento-card>` with item snapshot + ack metadata + receiver signature info.
@@ -172,6 +177,8 @@ Card list instead of a table:
 ### 5.7 Items — `items.blade.php` + `items-show.blade.php`
 
 **Index:** card grid, `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`. Each card shows item name, unit, in-stock count (large), thin `<x-sparkline>` of last-30-days movement. Hover lift on the whole card.
+
+**Controller change:** `ItemController@index` adds a `movement30` array (length 30, daily net stock delta) to each item before passing to the view.
 
 **Show:** header with item meta (name, unit, current stock — count-up). Below: two `<x-bento-card>` tiles side by side — "Receipts" history (themed `<x-table>`) and "Releases" history.
 
