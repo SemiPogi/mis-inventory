@@ -56,3 +56,25 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Local Development
+
+Run the dev server (Vite + Laravel + queue + logs in parallel):
+
+```bash
+composer dev
+```
+
+Or just the frontend with HMR:
+
+```bash
+npm run dev
+```
+
+Production build:
+
+```bash
+npm run build
+```
+
+The UI is themed via `tailwind.config.js` — see `docs/superpowers/specs/2026-05-27-frontend-redesign-design.md` for the design system.
