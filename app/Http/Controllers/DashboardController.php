@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Item;
+use App\Models\PettyCashVoucher;
 use App\Models\Transaction;
 use Illuminate\Support\Carbon;
 
@@ -45,6 +46,20 @@ class DashboardController extends Controller
             ->orderByDesc('c')
             ->value('item_name_snapshot');
 
+        $pcThisMonth = PettyCashVoucher::whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->whereIn('status', ['submitted', 'acknowledged', 'settled'])
+            ->sum('total_amount');
+
+        $pcVouchersThisMonth = PettyCashVoucher::whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+
+        $pcPendingAck    = PettyCashVoucher::where('status', 'submitted')->count();
+        $pcPendingSettle = PettyCashVoucher::where('status', 'acknowledged')->count();
+
+        $recentVouchers = PettyCashVoucher::with('creator')->latest()->limit(5)->get();
+
         return view('dashboard', compact(
             'totalInStock',
             'totalReleased',
@@ -54,6 +69,11 @@ class DashboardController extends Controller
             'weeklyActivity',
             'topOffice',
             'topItem',
+            'pcThisMonth',
+            'pcVouchersThisMonth',
+            'pcPendingAck',
+            'pcPendingSettle',
+            'recentVouchers',
         ));
     }
 }

@@ -31,7 +31,55 @@
         </x-bento-card>
     </div>
 
-    {{-- Row 3: Pending acknowledgments table --}}
+    {{-- Row 3: Petty Cash tiles --}}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <x-stat-tile label="Petty Cash This Month" :value="'₱' . number_format($pcThisMonth, 2)" icon="banknotes" color="amber" />
+        <x-stat-tile label="Vouchers This Month" :value="$pcVouchersThisMonth" icon="document-text" color="primary" />
+        @if(auth()->user()->canCreateVoucher())
+            <x-stat-tile label="Pending Acknowledgement" :value="$pcPendingAck" icon="clock" color="rose" />
+        @endif
+        @if(auth()->user()->canSettleVoucher())
+            <x-stat-tile label="Pending Settlement" :value="$pcPendingSettle" icon="banknotes" color="amber" />
+        @endif
+    </div>
+
+    {{-- Row 4: Recent petty cash vouchers --}}
+    @if($recentVouchers->isNotEmpty())
+    <x-bento-card :padded="false" class="mb-4">
+        <div class="px-6 py-4 border-b border-surface-border flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-ink-heading">Recent Petty Cash</h2>
+            <a href="{{ route('petty-cash.index') }}" class="text-xs font-medium text-primary-600 hover:text-primary-700">View all</a>
+        </div>
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-left text-xs text-ink-muted uppercase border-b border-surface-border">
+                    <th class="px-6 py-3">Voucher</th>
+                    <th class="px-6 py-3">Store</th>
+                    <th class="px-6 py-3 text-right">Amount</th>
+                    <th class="px-6 py-3 text-right">Change</th>
+                    <th class="px-6 py-3">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-surface-border">
+                @foreach($recentVouchers as $v)
+                    <tr>
+                        <td class="px-6 py-3 font-mono text-primary-700">
+                            <a href="{{ route('petty-cash.show', $v) }}" class="hover:underline">{{ $v->voucher_number }}</a>
+                        </td>
+                        <td class="px-6 py-3 text-ink-muted">{{ $v->store_name }}</td>
+                        <td class="px-6 py-3 text-right">₱{{ number_format($v->total_amount, 2) }}</td>
+                        <td class="px-6 py-3 text-right {{ $v->change_amount > 0 ? 'text-amber-600' : 'text-ink-muted' }}">
+                            ₱{{ number_format($v->change_amount, 2) }}
+                        </td>
+                        <td class="px-6 py-3"><x-status-badge :status="$v->status" /></td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </x-bento-card>
+    @endif
+
+    {{-- Row 5: Pending acknowledgments table --}}
     <x-bento-card :padded="false">
         <div class="px-6 py-4 border-b border-surface-border flex items-center justify-between">
             <h2 class="text-sm font-semibold text-ink-heading">Pending Acknowledgments</h2>
