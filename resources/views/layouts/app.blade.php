@@ -14,14 +14,22 @@
 <body class="bg-surface-page text-ink-body antialiased">
 
 @php
+    $user = auth()->user();
     $nav = [
-        ['route' => 'dashboard',          'label' => 'Dashboard',    'icon' => 'home',           'match' => '/'],
-        ['route' => 'receive.index',      'label' => 'Receive',      'icon' => 'arrow-down-tray', 'match' => 'receive'],
-        ['route' => 'release.index',      'label' => 'Release',      'icon' => 'arrow-up-tray',   'match' => 'release'],
-        ['route' => 'acknowledge.index',  'label' => 'Acknowledge',  'icon' => 'check-circle',    'match' => 'acknowledge'],
+        ['route' => 'dashboard',          'label' => 'Dashboard',    'icon' => 'home',                    'match' => '/'],
+        ['route' => 'receive.index',      'label' => 'Receive',      'icon' => 'arrow-down-tray',         'match' => 'receive'],
+        ['route' => 'release.index',      'label' => 'Release',      'icon' => 'arrow-up-tray',           'match' => 'release'],
+        ['route' => 'acknowledge.index',  'label' => 'Acknowledge',  'icon' => 'check-circle',            'match' => 'acknowledge'],
         ['route' => 'transactions.index', 'label' => 'Transactions', 'icon' => 'clipboard-document-list', 'match' => 'transactions*'],
-        ['route' => 'items.index',        'label' => 'Inventory',    'icon' => 'cube',            'match' => 'items*'],
+        ['route' => 'items.index',        'label' => 'Inventory',    'icon' => 'cube',                    'match' => 'items*'],
     ];
+
+    $pcBadge = 0;
+    if ($user->canCreateVoucher()) {
+        $pcBadge = \App\Models\PettyCashVoucher::where('status', 'submitted')->count();
+    } elseif ($user->canSettleVoucher()) {
+        $pcBadge = \App\Models\PettyCashVoucher::where('status', 'acknowledged')->count();
+    }
 @endphp
 
 <div class="flex min-h-screen" x-data="{ collapsed: localStorage.getItem('sidebar-collapsed') === '1' }">
@@ -56,6 +64,53 @@
                     <span x-show="!collapsed" x-transition.opacity>{{ $item['label'] }}</span>
                 </a>
             @endforeach
+
+            {{-- Petty Cash (all roles) --}}
+            @php $pcActive = request()->is('petty-cash*'); @endphp
+            <a href="{{ route('petty-cash.index') }}"
+               class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                      {{ $pcActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                @if($pcActive)
+                    <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                @endif
+                <span class="relative shrink-0">
+                    <x-heroicon-o-banknotes class="w-5 h-5"/>
+                    @if($pcBadge > 0)
+                        <span class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                            {{ $pcBadge > 9 ? '9+' : $pcBadge }}
+                        </span>
+                    @endif
+                </span>
+                <span x-show="!collapsed" x-transition.opacity>Petty Cash</span>
+            </a>
+
+            {{-- Reports (accounting + admin) --}}
+            @if($user->canAccessReports())
+                @php $repActive = request()->is('reports*'); @endphp
+                <a href="{{ route('reports.index') }}"
+                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                          {{ $repActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                    @if($repActive)
+                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                    @endif
+                    <x-heroicon-o-chart-bar class="w-5 h-5 shrink-0"/>
+                    <span x-show="!collapsed" x-transition.opacity>Reports</span>
+                </a>
+            @endif
+
+            {{-- Users (admin only) --}}
+            @if($user->canManageUsers())
+                @php $usersActive = request()->is('users*'); @endphp
+                <a href="{{ route('users.index') }}"
+                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                          {{ $usersActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                    @if($usersActive)
+                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                    @endif
+                    <x-heroicon-o-users class="w-5 h-5 shrink-0"/>
+                    <span x-show="!collapsed" x-transition.opacity>Users</span>
+                </a>
+            @endif
         </nav>
 
         <div class="px-5 py-4 border-t border-surface-border" x-show="!collapsed" x-transition.opacity>
