@@ -14,6 +14,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
 
+    // ── Staff + Admin: create/acknowledge vouchers ─────────────────────────
+    // IMPORTANT: must be declared BEFORE the all-roles group so that
+    // /petty-cash/create is matched before /petty-cash/{pettyCash}.
+    Route::middleware('role:admin,staff')->group(function () {
+        Route::get('/petty-cash/create', [PettyCashController::class, 'create'])->name('petty-cash.create');
+        Route::post('/petty-cash', [PettyCashController::class, 'store'])->name('petty-cash.store');
+        Route::patch('/petty-cash/{pettyCash}/acknowledge', [PettyCashController::class, 'acknowledge'])->name('petty-cash.acknowledge');
+    });
+
     // ── Available to ALL roles ──────────────────────────────────────────────
     Route::middleware('role:admin,staff,accounting')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -32,17 +41,10 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-        // Petty cash — view for all roles
+        // Petty cash — view for all roles (parameterized routes come after /create)
         Route::get('/petty-cash', [PettyCashController::class, 'index'])->name('petty-cash.index');
         Route::get('/petty-cash/{pettyCash}', [PettyCashController::class, 'show'])->name('petty-cash.show');
         Route::get('/petty-cash/{pettyCash}/print', [PettyCashController::class, 'print'])->name('petty-cash.print');
-    });
-
-    // ── Staff + Admin: create/acknowledge vouchers ─────────────────────────
-    Route::middleware('role:admin,staff')->group(function () {
-        Route::get('/petty-cash/create', [PettyCashController::class, 'create'])->name('petty-cash.create');
-        Route::post('/petty-cash', [PettyCashController::class, 'store'])->name('petty-cash.store');
-        Route::patch('/petty-cash/{pettyCash}/acknowledge', [PettyCashController::class, 'acknowledge'])->name('petty-cash.acknowledge');
     });
 
     // ── Accounting + Admin: settle + reports ──────────────────────────────
