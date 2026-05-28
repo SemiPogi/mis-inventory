@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Item;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class ItemController extends Controller
 {
@@ -12,15 +14,22 @@ class ItemController extends Controller
         $query = Item::query();
 
         if ($request->search) {
-            $query->where('name', 'like', '%' . $request->search . '%')
-                ->orWhere('brand', 'like', '%' . $request->search . '%');
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('brand', 'like', '%' . $request->search . '%');
+            });
         }
 
         if ($request->category) {
             $query->where('category', $request->category);
         }
 
-        $items = $query->latest()->paginate(20);
+        $items = $query->latest()->paginate(24);
+
+        $items->getCollection()->transform(function (Item $item) {
+            $item->movement30 = $this->movement30($item);
+            return $item;
+        });
 
         $categories = Item::select('category')
             ->distinct()
@@ -33,6 +42,27 @@ class ItemController extends Controller
     public function show(Item $item)
     {
         $transactions = $item->transactions()->latest()->get();
-        return view('items-show', compact('item', 'transactions'));
+        $movement30 = $this->movement30($item);
+        return view('items-show', compact('item', 'transactions', 'movement30'));
+    }
+
+    private function movement30(Item $item): array
+    {
+        $start = Carbon::today()->subDays(29);
+
+        $rows = Transaction::where('item_id', $item->id)
+            ->whereDate('created_at', '>=', $start)
+            ->get(['type', 'qty', 'created_at']);
+
+        $byDay = [];
+        for ($i = 0; $i < 30; $i++) {
+            $byDay[$start->copy()->addDays($i)->toDateString()] = 0;
+        }
+        foreach ($rows as $r) {
+            $day = $r->created_at->toDateString();
+            if (!array_key_exists($day, $byDay)) continue;
+            $byDay[$day] += $r->type === 'received' ? $r->qty : -$r->qty;
+        }
+        return array_values($byDay);
     }
 }

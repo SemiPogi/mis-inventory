@@ -1,136 +1,149 @@
 <x-app-layout>
-    <div class="mb-6">
-        <h1 class="text-2xl font-semibold text-gray-800">Acknowledge Receipt</h1>
-        <p class="text-sm text-gray-500 mt-1">Record acknowledgment from receiving offices</p>
-    </div>
+    <x-page-header title="Acknowledge Receipt" subtitle="Record acknowledgment from receiving offices"/>
 
     {{-- Pending --}}
-    <div class="bg-white rounded-xl border border-gray-200 mb-6">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-sm font-semibold text-gray-700">Awaiting Acknowledgment ({{ $pending->count() }})</h2>
+    <x-bento-card :padded="false" class="mb-6">
+        <div class="px-6 py-4 border-b border-surface-border flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-ink-heading">
+                Awaiting Acknowledgment <span class="text-ink-muted">({{ $pending->count() }})</span>
+            </h2>
         </div>
+
         @if($pending->isEmpty())
-            <div class="px-6 py-10 text-center text-sm text-gray-400">All releases have been acknowledged.</div>
+            <x-empty-state icon="check-circle" title="All caught up" hint="No pending acknowledgments."/>
         @else
-        <div class="divide-y divide-gray-50">
-            @foreach($pending as $tx)
-            <div class="px-6 py-4">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-sm font-medium text-gray-800">{{ $tx->item_name_snapshot }}</p>
-                        <p class="text-xs text-gray-500 mt-1">
-                            {{ $tx->qty }} {{ $tx->unit }} &bull;
-                            Released to: <span class="text-gray-700">{{ $tx->receiver_name }}{{ $tx->receiver_designation ? ' ('.$tx->receiver_designation.')' : '' }}</span> &bull;
-                            {{ $tx->released_to_office }} &bull;
-                            {{ $tx->date_released }}
-                        </p>
-                        @if($tx->purpose)
-                            <p class="text-xs text-gray-400 mt-1">Purpose: {{ $tx->purpose }}</p>
-                        @endif
+            <div class="divide-y divide-surface-border"
+                 x-data="ackList()" x-init="$stagger($el)" data-anim="stagger">
+                @foreach($pending as $tx)
+                    <div id="tx-{{ $tx->id }}" class="px-6 py-4 transition">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex-1">
+                                <p class="text-sm font-semibold text-ink-heading">{{ $tx->item_name_snapshot }}</p>
+                                <p class="text-xs text-ink-body mt-1">
+                                    {{ $tx->qty }} {{ $tx->unit }} •
+                                    Released to: <span class="text-ink-heading">{{ $tx->receiver_name }}{{ $tx->receiver_designation ? ' ('.$tx->receiver_designation.')' : '' }}</span>
+                                    • {{ $tx->released_to_office }}
+                                    • {{ $tx->date_released }}
+                                </p>
+                                @if($tx->purpose)
+                                    <p class="text-xs text-ink-muted mt-1">Purpose: {{ $tx->purpose }}</p>
+                                @endif
+                            </div>
+                            <x-button type="button" variant="primary"
+                                @click="openModal({{ $tx->id }}, '{{ addslashes($tx->item_name_snapshot) }}', '{{ $tx->qty }} {{ $tx->unit }}', '{{ addslashes($tx->receiver_name) }}', '{{ addslashes($tx->released_to_office) }}')">
+                                <x-heroicon-o-check class="w-4 h-4"/>
+                                Acknowledge
+                            </x-button>
+                        </div>
                     </div>
-                    <button onclick="openModal({{ $tx->id }}, '{{ $tx->item_name_snapshot }}', '{{ $tx->qty }} {{ $tx->unit }}', '{{ $tx->receiver_name }}', '{{ $tx->released_to_office }}')"
-                        class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg">
-                        Record Acknowledgment
-                    </button>
+                @endforeach
+
+                {{-- Modal --}}
+                <div x-show="modal.open" x-cloak x-transition.opacity
+                     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                    <div class="bg-surface-tile rounded-2xl shadow-tile-hover p-6 w-full max-w-md mx-4 animate-pop">
+                        <h3 class="text-base font-semibold text-ink-heading mb-1">Record Acknowledgment</h3>
+                        <p class="text-xs text-ink-muted mb-4">
+                            <strong class="text-ink-heading" x-text="modal.item"></strong> • <span x-text="modal.qty"></span>
+                            <br>Released to: <span x-text="modal.receiver"></span> • <span x-text="modal.office"></span>
+                        </p>
+
+                        <form @submit.prevent="submit">
+                            <div class="space-y-4">
+                                <div>
+                                    <x-label for="ack-by" required>Acknowledged By</x-label>
+                                    <x-input id="ack-by" name="acknowledged_by_name" required x-model="form.acknowledged_by_name"/>
+                                </div>
+                                <div>
+                                    <x-label for="ack-date" required>Date Acknowledged</x-label>
+                                    <x-input id="ack-date" name="acknowledged_date" type="date" required x-model="form.acknowledged_date"/>
+                                </div>
+                                <div>
+                                    <x-label for="ack-remarks">Remarks</x-label>
+                                    <x-textarea id="ack-remarks" name="acknowledgment_remarks" rows="2" x-model="form.acknowledgment_remarks" placeholder="e.g. Items received in good condition"/>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end gap-2 mt-5">
+                                <x-button type="button" variant="ghost" @click="modal.open = false">Cancel</x-button>
+                                <x-button type="submit" variant="primary" x-bind:disabled="submitting" x-text="submitting ? 'Saving…' : 'Confirm'"></x-button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
-            @endforeach
-        </div>
         @endif
-    </div>
+    </x-bento-card>
 
-    {{-- Acknowledged --}}
-    <div class="bg-white rounded-xl border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-sm font-semibold text-gray-700">Acknowledged ({{ $acknowledged->count() }})</h2>
+    {{-- Acknowledged (history) --}}
+    <x-bento-card :padded="false">
+        <div class="px-6 py-4 border-b border-surface-border">
+            <h2 class="text-sm font-semibold text-ink-heading">
+                Acknowledged <span class="text-ink-muted">({{ $acknowledged->count() }})</span>
+            </h2>
         </div>
         @if($acknowledged->isEmpty())
-            <div class="px-6 py-10 text-center text-sm text-gray-400">No acknowledged transactions yet.</div>
+            <x-empty-state icon="document-text" title="No history yet" hint="Acknowledged transactions will appear here."/>
         @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-gray-100">
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Item</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Qty</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Released To</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Office</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Acknowledged By</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Date</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Remarks</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($acknowledged as $tx)
-                    <tr class="border-b border-gray-50 hover:bg-gray-50">
-                        <td class="px-6 py-3 font-medium text-gray-800">{{ $tx->item_name_snapshot }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $tx->qty }} {{ $tx->unit }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $tx->receiver_name }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $tx->released_to_office }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $tx->acknowledged_by_name }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $tx->acknowledged_date }}</td>
-                        <td class="px-6 py-3 text-gray-400">{{ $tx->acknowledgment_remarks ?? '—' }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+            <x-table :headers="['Item', 'Qty', 'Released To', 'Office', 'Acknowledged By', 'Date', 'Remarks']">
+                @foreach($acknowledged as $tx)
+                    <x-table.row>
+                        <td class="px-6 py-3 font-medium text-ink-heading">{{ $tx->item_name_snapshot }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->qty }} {{ $tx->unit }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->receiver_name }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->released_to_office }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->acknowledged_by_name }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->acknowledged_date }}</td>
+                        <td class="px-6 py-3 text-ink-muted">{{ $tx->acknowledgment_remarks ?? '—' }}</td>
+                    </x-table.row>
+                @endforeach
+            </x-table>
         @endif
-    </div>
-
-    {{-- Modal --}}
-    <div id="ack-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl border border-gray-200 p-6 w-full max-w-md mx-4">
-            <h3 class="text-sm font-semibold text-gray-800 mb-1">Record Acknowledgment</h3>
-            <div id="modal-detail" class="text-xs text-gray-500 mb-4"></div>
-
-            <form method="POST" id="ack-form" action="">
-                @csrf
-                @method('PATCH')
-
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs text-gray-500 uppercase tracking-wide mb-1">Acknowledged By *</label>
-                        <input type="text" name="acknowledged_by_name" required
-                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 uppercase tracking-wide mb-1">Date Acknowledged *</label>
-                        <input type="date" name="acknowledged_date" value="{{ date('Y-m-d') }}" required
-                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 uppercase tracking-wide mb-1">Remarks</label>
-                        <textarea name="acknowledgment_remarks" rows="2"
-                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="e.g. Items received in good condition"></textarea>
-                    </div>
-                </div>
-
-                <div class="flex gap-3 mt-5">
-                    <button type="submit"
-                        class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-lg">
-                        Confirm
-                    </button>
-                    <button type="button" onclick="closeModal()"
-                        class="border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-medium px-5 py-2 rounded-lg">
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    </x-bento-card>
 
     <script>
-        function openModal(id, item, qty, receiver, office) {
-            document.getElementById('ack-form').action = '/acknowledge/' + id;
-            document.getElementById('modal-detail').innerHTML =
-                '<strong class="text-gray-700">' + item + '</strong> &bull; ' + qty +
-                '<br>Released to: ' + receiver + ' &bull; ' + office;
-            document.getElementById('ack-modal').classList.remove('hidden');
-        }
-        function closeModal() {
-            document.getElementById('ack-modal').classList.add('hidden');
+        function ackList() {
+            return {
+                modal: { open: false, id: null, item: '', qty: '', receiver: '', office: '' },
+                form: {
+                    acknowledged_by_name: '',
+                    acknowledged_date: new Date().toISOString().slice(0, 10),
+                    acknowledgment_remarks: '',
+                },
+                submitting: false,
+                openModal(id, item, qty, receiver, office) {
+                    this.modal = { open: true, id, item, qty, receiver, office };
+                },
+                async submit() {
+                    if (this.submitting) return;
+                    this.submitting = true;
+
+                    const res = await fetch(`/acknowledge/${this.modal.id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        },
+                        body: JSON.stringify(this.form),
+                    });
+
+                    this.submitting = false;
+
+                    if (!res.ok) {
+                        alert('Could not record acknowledgment. Please try again.');
+                        return;
+                    }
+
+                    const row = document.getElementById(`tx-${this.modal.id}`);
+                    if (row) {
+                        row.classList.add('animate-pop-out');
+                        setTimeout(() => row.remove(), 250);
+                    }
+                    this.modal.open = false;
+                    this.form.acknowledgment_remarks = '';
+                },
+            }
         }
     </script>
 </x-app-layout>

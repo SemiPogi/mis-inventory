@@ -1,65 +1,108 @@
 <x-app-layout>
-    <div class="mb-6">
-        <h1 class="text-2xl font-semibold text-gray-800">Dashboard</h1>
-        <p class="text-sm text-gray-500 mt-1">MIS Office Inventory Overview</p>
+    <x-page-header title="Dashboard" subtitle="MIS Office Inventory Overview"/>
+
+    {{-- Row 1: Stat tiles --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4"
+         x-data x-init="$stagger($el)" data-anim="stagger">
+        <x-stat-tile label="Items in Stock"        :value="$totalInStock"  icon="cube"/>
+        <x-stat-tile label="Total Released"        :value="$totalReleased" icon="paper-airplane"/>
+        <x-stat-tile label="Pending Acknowledgment" :value="$pendingAck"   icon="clock" variant="hero"/>
+        <x-stat-tile label="Acknowledged"          :value="$acknowledged"  icon="check-badge"/>
     </div>
 
-    {{-- Stats --}}
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <p class="text-xs text-gray-500 uppercase tracking-wide">Items in Stock</p>
-            <p class="text-3xl font-semibold text-gray-800 mt-1">{{ $totalInStock }}</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <p class="text-xs text-gray-500 uppercase tracking-wide">Total Released</p>
-            <p class="text-3xl font-semibold text-amber-600 mt-1">{{ $totalReleased }}</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <p class="text-xs text-gray-500 uppercase tracking-wide">Pending Acknowledgment</p>
-            <p class="text-3xl font-semibold text-red-600 mt-1">{{ $pendingAck }}</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <p class="text-xs text-gray-500 uppercase tracking-wide">Acknowledged</p>
-            <p class="text-3xl font-semibold text-green-600 mt-1">{{ $acknowledged }}</p>
-        </div>
+    {{-- Row 2: hero activity + 2 side tiles --}}
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
+        <x-bento-card variant="hero" class="lg:col-span-2">
+            <p class="text-xs uppercase tracking-wide opacity-80 font-medium">Weekly Activity</p>
+            <p class="text-3xl font-bold mt-1">{{ array_sum($weeklyActivity) }} <span class="text-sm font-medium opacity-80">releases / 7d</span></p>
+            <div class="mt-3 h-16">
+                <x-sparkline :data="$weeklyActivity" color="#ffffff"/>
+            </div>
+        </x-bento-card>
+
+        <x-bento-card>
+            <p class="text-xs uppercase tracking-wide text-ink-muted font-medium">Top Office (this month)</p>
+            <p class="text-xl font-semibold text-ink-heading mt-2">{{ $topOffice ?? '—' }}</p>
+        </x-bento-card>
+
+        <x-bento-card>
+            <p class="text-xs uppercase tracking-wide text-ink-muted font-medium">Top Item (this month)</p>
+            <p class="text-xl font-semibold text-ink-heading mt-2">{{ $topItem ?? '—' }}</p>
+        </x-bento-card>
     </div>
 
-    {{-- Pending Acknowledgments Table --}}
-    <div class="bg-white rounded-xl border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-sm font-semibold text-gray-700">Pending Acknowledgments</h2>
-        </div>
-        @if($pendingTransactions->isEmpty())
-            <div class="px-6 py-10 text-center text-sm text-gray-400">No pending acknowledgments.</div>
-        @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-gray-100">
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Item</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Released To</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Office</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Qty</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Date</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($pendingTransactions as $tx)
-                    <tr class="border-b border-gray-50 hover:bg-gray-50">
-                        <td class="px-6 py-3 font-medium text-gray-800">{{ $tx->item_name_snapshot }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $tx->receiver_name }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $tx->released_to_office }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $tx->qty }} {{ $tx->unit }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $tx->date_released }}</td>
-                        <td class="px-6 py-3">
-                            <a href="{{ route('acknowledge.index') }}" class="text-blue-600 hover:text-blue-800 text-xs font-medium">Acknowledge</a>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+    {{-- Row 3: Petty Cash tiles --}}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <x-stat-tile label="Petty Cash This Month" :value="'₱' . number_format($pcThisMonth, 2)" icon="banknotes" color="amber" />
+        <x-stat-tile label="Vouchers This Month" :value="$pcVouchersThisMonth" icon="document-text" color="primary" />
+        @if(auth()->user()->canCreateVoucher())
+            <x-stat-tile label="Pending Acknowledgement" :value="$pcPendingAck" icon="clock" color="rose" />
+        @endif
+        @if(auth()->user()->canSettleVoucher())
+            <x-stat-tile label="Pending Settlement" :value="$pcPendingSettle" icon="banknotes" color="amber" />
         @endif
     </div>
+
+    {{-- Row 4: Recent petty cash vouchers --}}
+    @if($recentVouchers->isNotEmpty())
+    <x-bento-card :padded="false" class="mb-4">
+        <div class="px-6 py-4 border-b border-surface-border flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-ink-heading">Recent Petty Cash</h2>
+            <a href="{{ route('petty-cash.index') }}" class="text-xs font-medium text-primary-600 hover:text-primary-700">View all</a>
+        </div>
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-left text-xs text-ink-muted uppercase border-b border-surface-border">
+                    <th class="px-6 py-3">Voucher</th>
+                    <th class="px-6 py-3">Store</th>
+                    <th class="px-6 py-3 text-right">Amount</th>
+                    <th class="px-6 py-3 text-right">Change</th>
+                    <th class="px-6 py-3">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-surface-border">
+                @foreach($recentVouchers as $v)
+                    <tr>
+                        <td class="px-6 py-3 font-mono text-primary-700">
+                            <a href="{{ route('petty-cash.show', $v) }}" class="hover:underline">{{ $v->voucher_number }}</a>
+                        </td>
+                        <td class="px-6 py-3 text-ink-muted">{{ $v->store_name }}</td>
+                        <td class="px-6 py-3 text-right">₱{{ number_format($v->total_amount, 2) }}</td>
+                        <td class="px-6 py-3 text-right {{ $v->change_amount > 0 ? 'text-amber-600' : 'text-ink-muted' }}">
+                            ₱{{ number_format($v->change_amount, 2) }}
+                        </td>
+                        <td class="px-6 py-3"><x-status-badge :status="$v->status" /></td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </x-bento-card>
+    @endif
+
+    {{-- Row 5: Pending acknowledgments table --}}
+    <x-bento-card :padded="false">
+        <div class="px-6 py-4 border-b border-surface-border flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-ink-heading">Pending Acknowledgments</h2>
+            <a href="{{ route('acknowledge.index') }}" class="text-xs font-medium text-primary-600 hover:text-primary-700">View all</a>
+        </div>
+
+        @if($pendingTransactions->isEmpty())
+            <x-empty-state icon="check-circle" title="All caught up" hint="No pending acknowledgments." />
+        @else
+            <x-table :headers="['Item', 'Released To', 'Office', 'Qty', 'Date', '']">
+                @foreach($pendingTransactions as $tx)
+                    <x-table.row>
+                        <td class="px-6 py-3 font-medium text-ink-heading">{{ $tx->item_name_snapshot }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->receiver_name }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->released_to_office }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->qty }} {{ $tx->unit }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->date_released }}</td>
+                        <td class="px-6 py-3 text-right">
+                            <a href="{{ route('acknowledge.index') }}" class="text-primary-600 hover:text-primary-700 text-xs font-medium">Acknowledge →</a>
+                        </td>
+                    </x-table.row>
+                @endforeach
+            </x-table>
+        @endif
+    </x-bento-card>
 </x-app-layout>

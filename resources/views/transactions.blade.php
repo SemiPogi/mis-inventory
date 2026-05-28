@@ -1,93 +1,87 @@
 <x-app-layout>
-    <div class="mb-6">
-        <h1 class="text-2xl font-semibold text-gray-800">Transactions</h1>
-        <p class="text-sm text-gray-500 mt-1">Full log of all received and released items</p>
-    </div>
+    <x-page-header title="Transactions" subtitle="Full log of all received and released items"/>
 
-    {{-- Filters --}}
-    <div class="bg-white rounded-xl border border-gray-200 p-4 mb-4">
-        <form method="GET" action="{{ route('transactions.index') }}" class="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <input type="text" name="search" value="{{ request('search') }}"
-                placeholder="Search item, office, person..."
-                class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 md:col-span-2">
-            <select name="type" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">All types</option>
-                <option value="received" {{ request('type') == 'received' ? 'selected' : '' }}>Received</option>
-                <option value="released" {{ request('type') == 'released' ? 'selected' : '' }}>Released</option>
-            </select>
-            <select name="status" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">All status</option>
-                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                <option value="acknowledged" {{ request('status') == 'acknowledged' ? 'selected' : '' }}>Acknowledged</option>
-            </select>
-            <button type="submit"
-                class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
-                Filter
-            </button>
+    {{-- Filter bar --}}
+    <x-bento-card class="mb-4">
+        <form method="GET" action="{{ route('transactions.index') }}"
+              class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+            <div class="md:col-span-2">
+                <x-label for="search">Search</x-label>
+                <x-input id="search" name="search" :value="request('search')" placeholder="Item, office, person…"/>
+            </div>
+            <div>
+                <x-label for="type">Type</x-label>
+                <x-select id="type" name="type">
+                    <option value="">All</option>
+                    <option value="received" @selected(request('type') === 'received')>Received</option>
+                    <option value="released" @selected(request('type') === 'released')>Released</option>
+                </x-select>
+            </div>
+            <div>
+                <x-label for="status">Status</x-label>
+                <x-select id="status" name="status">
+                    <option value="">All</option>
+                    <option value="pending" @selected(request('status') === 'pending')>Pending</option>
+                    <option value="acknowledged" @selected(request('status') === 'acknowledged')>Acknowledged</option>
+                </x-select>
+            </div>
+            <div>
+                <x-label for="date_from">From</x-label>
+                <x-input id="date_from" name="date_from" type="date" :value="request('date_from')"/>
+            </div>
+            <div>
+                <x-label for="date_to">To</x-label>
+                <x-input id="date_to" name="date_to" type="date" :value="request('date_to')"/>
+            </div>
+            <div class="md:col-span-6 flex justify-end gap-2">
+                @if(request()->hasAny(['search','type','status','date_from','date_to']))
+                    <x-button as="a" variant="ghost" href="{{ route('transactions.index') }}">Clear</x-button>
+                @endif
+                <x-button type="submit" variant="primary">
+                    <x-heroicon-o-funnel class="w-4 h-4"/>
+                    Apply filters
+                </x-button>
+            </div>
         </form>
-    </div>
+    </x-bento-card>
 
-    {{-- Table --}}
-    <div class="bg-white rounded-xl border border-gray-200">
+    <x-bento-card :padded="false">
         @if($transactions->isEmpty())
-            <div class="px-6 py-10 text-center text-sm text-gray-400">No transactions found.</div>
+            <x-empty-state icon="inbox" title="No transactions found" hint="Adjust filters or record a new transaction."/>
         @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-gray-100">
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Type</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Item</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Qty</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">From / To</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Office</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Date</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Status</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($transactions as $tx)
-                    <tr class="border-b border-gray-50 hover:bg-gray-50">
+            <x-table :headers="['Type','Item','Qty','From / To','Office','Date','Status','']">
+                @foreach($transactions as $tx)
+                    <x-table.row>
                         <td class="px-6 py-3">
-                            @if($tx->type == 'received')
-                                <span class="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">IN</span>
+                            @if($tx->type === 'received')
+                                <x-status-badge status="received">IN</x-status-badge>
                             @else
-                                <span class="bg-amber-50 text-amber-700 text-xs font-medium px-2 py-1 rounded-full">OUT</span>
+                                <x-status-badge status="released">OUT</x-status-badge>
                             @endif
                         </td>
-                        <td class="px-6 py-3 font-medium text-gray-800">{{ $tx->item_name_snapshot }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $tx->qty }} {{ $tx->unit }}</td>
-                        <td class="px-6 py-3 text-gray-600">
-                            {{ $tx->type == 'received' ? $tx->received_from : $tx->receiver_name }}
-                        </td>
-                        <td class="px-6 py-3 text-gray-600">
-                            {{ $tx->type == 'received' ? 'S&P Office' : $tx->released_to_office }}
-                        </td>
-                        <td class="px-6 py-3 text-gray-600">
-                            {{ $tx->type == 'received' ? $tx->date_received : $tx->date_released }}
-                        </td>
+                        <td class="px-6 py-3 font-medium text-ink-heading">{{ $tx->item_name_snapshot }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->qty }} {{ $tx->unit }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? $tx->received_from : $tx->receiver_name }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? 'S&P Office' : $tx->released_to_office }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? $tx->date_received : $tx->date_released }}</td>
                         <td class="px-6 py-3">
-                            @if($tx->type == 'received')
-                                <span class="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">Received</span>
-                            @elseif($tx->acknowledgment_status == 'acknowledged')
-                                <span class="bg-green-50 text-green-700 text-xs font-medium px-2 py-1 rounded-full">Acknowledged</span>
+                            @if($tx->type === 'received')
+                                <x-status-badge status="received"/>
+                            @elseif($tx->acknowledgment_status === 'acknowledged')
+                                <x-status-badge status="acknowledged"/>
                             @else
-                                <span class="bg-red-50 text-red-700 text-xs font-medium px-2 py-1 rounded-full">Pending</span>
+                                <x-status-badge status="pending"/>
                             @endif
                         </td>
-                        <td class="px-6 py-3">
-                            <a href="{{ route('transactions.show', $tx->id) }}"
-                                class="text-blue-600 hover:text-blue-800 text-xs font-medium">View</a>
+                        <td class="px-6 py-3 text-right">
+                            <a href="{{ route('transactions.show', $tx->id) }}" class="text-primary-600 hover:text-primary-700 text-xs font-medium">View →</a>
                         </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        <div class="px-6 py-4 border-t border-gray-100">
-            {{ $transactions->withQueryString()->links() }}
-        </div>
+                    </x-table.row>
+                @endforeach
+            </x-table>
+            <div class="px-6 py-4 border-t border-surface-border">
+                {{ $transactions->withQueryString()->links() }}
+            </div>
         @endif
-    </div>
+    </x-bento-card>
 </x-app-layout>

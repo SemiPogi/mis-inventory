@@ -26,6 +26,15 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        // Block inactive accounts after credential check passes
+        if (! $request->user()->is_active) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            return back()->withErrors([
+                'email' => 'Your account has been deactivated. Contact an administrator.',
+            ]);
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard', absolute: false));

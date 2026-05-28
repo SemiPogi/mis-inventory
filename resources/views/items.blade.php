@@ -1,73 +1,76 @@
 <x-app-layout>
-    <div class="mb-6">
-        <h1 class="text-2xl font-semibold text-gray-800">Inventory</h1>
-        <p class="text-sm text-gray-500 mt-1">All items received by the MIS Office</p>
-    </div>
+    <x-page-header title="Inventory" subtitle="All items received by the MIS Office">
+        <x-slot:actions>
+            <x-button as="a" variant="primary" href="{{ route('receive.index') }}">
+                <x-heroicon-o-plus class="w-4 h-4"/> Receive Item
+            </x-button>
+        </x-slot:actions>
+    </x-page-header>
 
     {{-- Filters --}}
-    <div class="bg-white rounded-xl border border-gray-200 p-4 mb-4">
-        <form method="GET" action="{{ route('items.index') }}" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <input type="text" name="search" value="{{ request('search') }}"
-                placeholder="Search item or brand..."
-                class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 md:col-span-2">
-            <select name="category" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">All categories</option>
-                @foreach($categories as $cat)
-                    <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
-                @endforeach
-            </select>
-            <button type="submit"
-                class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
-                Filter
-            </button>
-        </form>
-    </div>
-
-    {{-- Table --}}
-    <div class="bg-white rounded-xl border border-gray-200">
-        @if($items->isEmpty())
-            <div class="px-6 py-10 text-center text-sm text-gray-400">No items found.</div>
-        @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-gray-100">
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Item Name</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Category</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Brand</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Total Received</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Current Qty</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide">Unit</th>
-                        <th class="text-left px-6 py-3 text-xs text-gray-500 uppercase tracking-wide"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($items as $item)
-                    <tr class="border-b border-gray-50 hover:bg-gray-50">
-                        <td class="px-6 py-3 font-medium text-gray-800">{{ $item->name }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $item->category ?? '—' }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $item->brand ?? '—' }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ $item->total_qty_received }}</td>
-                        <td class="px-6 py-3">
-                            @if($item->current_qty > 0)
-                                <span class="bg-green-50 text-green-700 text-xs font-medium px-2 py-1 rounded-full">{{ $item->current_qty }}</span>
-                            @else
-                                <span class="bg-red-50 text-red-700 text-xs font-medium px-2 py-1 rounded-full">0</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-3 text-gray-600">{{ $item->unit }}</td>
-                        <td class="px-6 py-3">
-                            <a href="{{ route('items.show', $item->id) }}"
-                                class="text-blue-600 hover:text-blue-800 text-xs font-medium">View</a>
-                        </td>
-                    </tr>
+    <x-bento-card class="mb-4">
+        <form method="GET" action="{{ route('items.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <div class="md:col-span-2">
+                <x-label for="search">Search</x-label>
+                <x-input id="search" name="search" :value="request('search')" placeholder="Item name or brand…"/>
+            </div>
+            <div>
+                <x-label for="category">Category</x-label>
+                <x-select id="category" name="category">
+                    <option value="">All categories</option>
+                    @foreach($categories as $cat)
+                        <option value="{{ $cat }}" @selected(request('category') === $cat)>{{ $cat }}</option>
                     @endforeach
-                </tbody>
-            </table>
+                </x-select>
+            </div>
+            <div class="flex gap-2">
+                @if(request()->hasAny(['search','category']))
+                    <x-button as="a" variant="ghost" href="{{ route('items.index') }}">Clear</x-button>
+                @endif
+                <x-button type="submit" variant="primary">
+                    <x-heroicon-o-funnel class="w-4 h-4"/> Filter
+                </x-button>
+            </div>
+        </form>
+    </x-bento-card>
+
+    {{-- Card grid --}}
+    @if($items->isEmpty())
+        <x-bento-card><x-empty-state icon="cube" title="No items found" hint="Adjust filters or receive a new item."/></x-bento-card>
+    @else
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+             x-data x-init="$stagger($el)" data-anim="stagger">
+            @foreach($items as $item)
+                <a href="{{ route('items.show', $item->id) }}"
+                   class="block bg-surface-tile rounded-2xl shadow-tile p-5 transition hover:-translate-y-1 hover:shadow-tile-hover">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-ink-heading truncate">{{ $item->name }}</p>
+                            <p class="text-xs text-ink-muted mt-0.5 truncate">
+                                {{ $item->brand ?? '—' }}{{ $item->category ? ' • '.$item->category : '' }}
+                            </p>
+                        </div>
+                        @if($item->current_qty > 0)
+                            <span class="bg-emerald-50 text-emerald-700 text-xs font-medium px-2.5 py-1 rounded-full shrink-0">In stock</span>
+                        @else
+                            <span class="bg-rose-50 text-rose-700 text-xs font-medium px-2.5 py-1 rounded-full shrink-0">Out</span>
+                        @endif
+                    </div>
+                    <div class="mt-4 flex items-end justify-between">
+                        <div>
+                            <p class="text-3xl font-bold text-ink-heading">{{ $item->current_qty }}</p>
+                            <p class="text-xs text-ink-muted">{{ $item->unit }} on hand</p>
+                        </div>
+                        <div class="w-24 h-10">
+                            <x-sparkline :data="$item->movement30"/>
+                        </div>
+                    </div>
+                </a>
+            @endforeach
         </div>
-        <div class="px-6 py-4 border-t border-gray-100">
+
+        <div class="mt-4">
             {{ $items->withQueryString()->links() }}
         </div>
-        @endif
-    </div>
+    @endif
 </x-app-layout>
