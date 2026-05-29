@@ -39,8 +39,8 @@ A single database with `department_id` foreign key added to all existing tables.
 
 ```
 departments
-  id, name, code (e.g. MIS, NURS, PHARM), is_supply_hub (bool),
-  is_active (bool), created_at, updated_at
+  id, name, code (e.g. MIS, NURS, PHARM), responsibility_center_code,
+  is_supply_hub (bool), is_active (bool), created_at, updated_at
 
 ris_requests
   id, ris_number (RIS-YYYY-NNNN), requesting_dept_id (FK),
@@ -190,9 +190,9 @@ Same workflow as current system, now tagged to a department.
 ## 7. Additional Features
 
 ### 7.1 Item Categories
-- `category` string field on items (e.g. Office Supplies, Medical Supplies, IT Equipment, Equipment, Furniture, Others)
+- `category` string field on items with predefined options: Office Supplies, Medical Supplies, IT Equipment, Equipment, Furniture, Others
 - Filterable in inventory list and reports
-- Admin can define a global category list
+- Options defined in code — no separate table needed
 
 ### 7.2 Expiry Date Tracking
 - `expiry_date` nullable date on items
