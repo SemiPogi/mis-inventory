@@ -1,7 +1,8 @@
 @props([
     'variant' => 'primary',
     'type' => 'button',
-    'as' => 'button',
+    'as' => null,
+    'href' => null,
 ])
 
 @php
@@ -12,10 +13,11 @@
         'danger'  => 'bg-danger hover:bg-rose-700 text-white focus:ring-rose-500',
     ];
     $classes = $base . ' ' . ($variants[$variant] ?? $variants['primary']);
+    $isLink = $as === 'a' || $href !== null;
 @endphp
 
-@if($as === 'a')
-    <a {{ $attributes->class($classes) }}>{{ $slot }}</a>
+@if($isLink)
+    <a href="{{ $href }}" {{ $attributes->except('href')->class($classes) }}>{{ $slot }}</a>
 @else
     <button type="{{ $type }}" {{ $attributes->class($classes) }}>{{ $slot }}</button>
 @endif
