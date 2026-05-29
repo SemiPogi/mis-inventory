@@ -9,6 +9,7 @@ use App\Http\Controllers\ReleaseController;
 use App\Http\Controllers\AcknowledgeController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,14 +46,16 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/petty-cash', [PettyCashController::class, 'index'])->name('petty-cash.index');
         Route::get('/petty-cash/{pettyCash}', [PettyCashController::class, 'show'])->name('petty-cash.show');
         Route::get('/petty-cash/{pettyCash}/print', [PettyCashController::class, 'print'])->name('petty-cash.print');
-    });
 
-    // ── Accounting + Admin: settle + reports ──────────────────────────────
-    Route::middleware('role:admin,accounting')->group(function () {
-        Route::patch('/petty-cash/{pettyCash}/settle', [PettyCashController::class, 'settle'])->name('petty-cash.settle');
+        // Reports — all roles (data scoped to their department)
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/inventory/{type}', [ReportController::class, 'inventory'])->name('reports.inventory');
         Route::get('/reports/petty-cash/{type}', [ReportController::class, 'pettyCash'])->name('reports.petty-cash');
+    });
+
+    // ── Accounting + Admin: settle ────────────────────────────────────────
+    Route::middleware('role:admin,accounting')->group(function () {
+        Route::patch('/petty-cash/{pettyCash}/settle', [PettyCashController::class, 'settle'])->name('petty-cash.settle');
     });
 
     // ── Admin only ─────────────────────────────────────────────────────────
@@ -64,6 +67,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::patch('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+
+        // Departments (admin only)
+        Route::get('/departments', [DepartmentController::class, 'index'])->name('departments.index');
+        Route::get('/departments/create', [DepartmentController::class, 'create'])->name('departments.create');
+        Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
+        Route::get('/departments/{department}/edit', [DepartmentController::class, 'edit'])->name('departments.edit');
+        Route::patch('/departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
+        Route::patch('/departments/{department}/toggle', [DepartmentController::class, 'toggle'])->name('departments.toggle');
     });
 });
 
