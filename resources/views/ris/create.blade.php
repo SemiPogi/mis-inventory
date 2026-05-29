@@ -16,6 +16,18 @@
         <x-bento-card>
             <p class="text-sm font-semibold text-ink-heading mb-4">Request Details</p>
             <div class="space-y-4">
+                @if(auth()->user()->isAdmin())
+                <div>
+                    <x-label for="requesting_dept_id" required>Requesting Department</x-label>
+                    <x-select id="requesting_dept_id" name="requesting_dept_id" required>
+                        <option value="">— Select department —</option>
+                        @foreach($departments as $dept)
+                            <option value="{{ $dept->id }}" @selected(old('requesting_dept_id') == $dept->id)>{{ $dept->name }}</option>
+                        @endforeach
+                    </x-select>
+                    @error('requesting_dept_id') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                </div>
+                @endif
                 <div>
                     <x-label for="purpose" required>Purpose / Justification</x-label>
                     <textarea id="purpose" name="purpose" rows="3"

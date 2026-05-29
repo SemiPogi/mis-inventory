@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
 use App\Models\RisRequest;
 use App\Models\RisItem;
 use Illuminate\Http\RedirectResponse;
@@ -28,25 +29,36 @@ class RisController extends Controller
 
     public function create(): View
     {
-        return view('ris.create');
+        $departments = auth()->user()->isAdmin()
+            ? Department::where('is_active', true)->orderBy('name')->get()
+            : collect();
+
+        return view('ris.create', compact('departments'));
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $isAdmin = auth()->user()->isAdmin();
+
         $data = $request->validate([
-            'purpose'           => ['required', 'string', 'max:500'],
-            'notes'             => ['nullable', 'string', 'max:1000'],
-            'items'             => ['required', 'array', 'min:1'],
-            'items.*.item_name' => ['required', 'string', 'max:255'],
-            'items.*.unit'      => ['required', 'string', 'max:50'],
+            'requesting_dept_id' => [$isAdmin ? 'required' : 'nullable', 'exists:departments,id'],
+            'purpose'            => ['required', 'string', 'max:500'],
+            'notes'              => ['nullable', 'string', 'max:1000'],
+            'items'              => ['required', 'array', 'min:1'],
+            'items.*.item_name'  => ['required', 'string', 'max:255'],
+            'items.*.unit'       => ['required', 'string', 'max:50'],
             'items.*.requested_qty' => ['required', 'integer', 'min:1'],
-            'items.*.stock_no'  => ['nullable', 'string', 'max:100'],
-            'items.*.remarks'   => ['nullable', 'string', 'max:255'],
+            'items.*.stock_no'   => ['nullable', 'string', 'max:100'],
+            'items.*.remarks'    => ['nullable', 'string', 'max:255'],
         ]);
+
+        $deptId = $isAdmin
+            ? $data['requesting_dept_id']
+            : auth()->user()->department_id;
 
         $ris = RisRequest::create([
             'ris_number'         => RisRequest::generateRisNumber(),
-            'requesting_dept_id' => auth()->user()->department_id,
+            'requesting_dept_id' => $deptId,
             'status'             => 'pending_head',
             'purpose'            => $data['purpose'],
             'notes'              => $data['notes'] ?? null,
