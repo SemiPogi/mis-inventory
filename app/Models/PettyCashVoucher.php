@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 
 class PettyCashVoucher extends Model
@@ -12,6 +13,7 @@ class PettyCashVoucher extends Model
         'requested_amount', 'transport_fee', 'total_amount', 'change_amount',
         'date_purchased', 'status', 'acknowledged_by', 'acknowledged_at',
         'change_returned_by', 'change_returned_at', 'created_by', 'remarks',
+        'department_id',
     ];
 
     protected $casts = [
@@ -42,6 +44,11 @@ class PettyCashVoucher extends Model
     public function changeReturnedBy()
     {
         return $this->belongsTo(User::class, 'change_returned_by');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 
     /**

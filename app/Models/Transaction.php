@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Transaction extends Model
 {
@@ -27,6 +28,7 @@ class Transaction extends Model
         'acknowledged_date',
         'acknowledgment_remarks',
         'remarks',
+        'department_id',
     ];
 
     public function item()
@@ -42,5 +44,10 @@ class Transaction extends Model
     public function releasedBy()
     {
         return $this->belongsTo(User::class, 'released_by_user_id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 }
