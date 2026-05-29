@@ -96,8 +96,8 @@ class RisController extends Controller
      */
     public function acknowledge(Request $request, RisRequest $ris): RedirectResponse
     {
-        $scope = $this->deptScope();
-        if ($scope && $ris->requesting_dept_id !== $scope) {
+        $user = auth()->user();
+        if (! $user->isAdmin() && $user->department_id !== $ris->requesting_dept_id) {
             abort(403);
         }
 

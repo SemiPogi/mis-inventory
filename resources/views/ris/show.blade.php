@@ -104,7 +104,13 @@
             @endif
 
             {{-- Acknowledge action --}}
-            @if($ris->isIssued() && auth()->user()->department_id === $ris->requesting_dept_id)
+            @php
+                $canAck = $ris->isIssued() && (
+                    auth()->user()->isAdmin() ||
+                    auth()->user()->department_id === $ris->requesting_dept_id
+                );
+            @endphp
+            @if($canAck)
                 <x-bento-card>
                     <p class="text-sm font-medium text-ink-heading mb-2">Acknowledge Receipt</p>
                     <p class="text-xs text-ink-muted mb-3">Confirm that you have received the issued items. They will be added to your inventory.</p>
