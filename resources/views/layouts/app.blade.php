@@ -110,12 +110,32 @@
                     <x-heroicon-o-users class="w-5 h-5 shrink-0"/>
                     <span x-show="!collapsed" x-transition.opacity>Users</span>
                 </a>
+
+                {{-- Departments (admin only) --}}
+                @php $deptsActive = request()->is('departments*'); @endphp
+                <a href="{{ route('departments.index') }}"
+                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                          {{ $deptsActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                    @if($deptsActive)
+                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                    @endif
+                    <x-heroicon-o-building-office class="w-5 h-5 shrink-0"/>
+                    <span x-show="!collapsed" x-transition.opacity>Departments</span>
+                </a>
             @endif
         </nav>
 
         <div class="px-5 py-4 border-t border-surface-border" x-show="!collapsed" x-transition.opacity>
             <p class="text-sm font-medium text-ink-heading truncate">{{ auth()->user()->name }}</p>
             <p class="text-xs text-ink-muted truncate">{{ auth()->user()->email }}</p>
+            @if(auth()->user()->department)
+                <p class="text-xs text-primary-600 font-medium truncate mt-0.5">
+                    {{ auth()->user()->department->name }}
+                    @if(auth()->user()->is_head)
+                        · <span class="text-amber-600">Head</span>
+                    @endif
+                </p>
+            @endif
             <div class="mt-2 flex gap-3 text-xs">
                 <a href="{{ route('profile.edit') }}" class="text-ink-muted hover:text-primary-600">Profile</a>
                 <form method="POST" action="{{ route('logout') }}">
