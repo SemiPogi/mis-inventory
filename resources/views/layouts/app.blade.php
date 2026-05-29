@@ -281,6 +281,18 @@
                     <x-heroicon-o-building-office class="w-5 h-5 shrink-0"/>
                     <span x-show="!collapsed" x-transition.opacity>Departments</span>
                 </a>
+
+                {{-- Item Categories (admin only) --}}
+                @php $catsActive = request()->is('item-categories*'); @endphp
+                <a href="{{ route('item-categories.index') }}"
+                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                          {{ $catsActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                    @if($catsActive)
+                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                    @endif
+                    <x-heroicon-o-tag class="w-5 h-5 shrink-0"/>
+                    <span x-show="!collapsed" x-transition.opacity>Categories</span>
+                </a>
             @endif
 
             {{-- Notifications --}}

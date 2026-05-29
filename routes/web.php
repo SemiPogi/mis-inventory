@@ -19,6 +19,7 @@ use App\Http\Controllers\AssemblyController;
 use App\Http\Controllers\IarController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ItemCategoryController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -143,6 +144,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/departments/{department}/edit', [DepartmentController::class, 'edit'])->name('departments.edit');
         Route::patch('/departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
         Route::patch('/departments/{department}/toggle', [DepartmentController::class, 'toggle'])->name('departments.toggle');
+
+        // Item Categories (admin only)
+        Route::get('/item-categories', [ItemCategoryController::class, 'index'])->name('item-categories.index');
+        Route::post('/item-categories', [ItemCategoryController::class, 'store'])->name('item-categories.store');
+        Route::patch('/item-categories/{itemCategory}', [ItemCategoryController::class, 'update'])->name('item-categories.update');
+        Route::patch('/item-categories/{itemCategory}/toggle', [ItemCategoryController::class, 'toggle'])->name('item-categories.toggle');
+        Route::delete('/item-categories/{itemCategory}', [ItemCategoryController::class, 'destroy'])->name('item-categories.destroy');
     });
 });
 

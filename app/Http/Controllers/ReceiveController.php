@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Item;
+use App\Models\ItemCategory;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 
@@ -10,7 +11,8 @@ class ReceiveController extends Controller
 {
     public function index()
     {
-        return view('receive');
+        $categories = ItemCategory::active()->orderBy('name')->pluck('name');
+        return view('receive', compact('categories'));
     }
 
     public function store(Request $request)

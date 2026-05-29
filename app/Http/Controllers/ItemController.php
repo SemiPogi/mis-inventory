@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Item;
+use App\Models\ItemCategory;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -32,11 +33,7 @@ class ItemController extends Controller
             return $item;
         });
 
-        $categories = Item::when($scope, fn($q) => $q->where('department_id', $scope))
-            ->select('category')
-            ->distinct()
-            ->whereNotNull('category')
-            ->pluck('category');
+        $categories = ItemCategory::active()->orderBy('name')->pluck('name');
 
         return view('items', compact('items', 'categories'));
     }

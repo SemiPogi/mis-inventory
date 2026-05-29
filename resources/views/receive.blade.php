@@ -15,7 +15,7 @@
                     <x-label for="category">Category</x-label>
                     <x-select id="category" name="category">
                         <option value="">Select category</option>
-                        @foreach(['Office Supplies','Hardware','Peripherals','Consumables','Cables & Accessories','Networking','Furniture & Equipment','Other'] as $cat)
+                        @foreach($categories as $cat)
                             <option value="{{ $cat }}" @selected(old('category') === $cat)>{{ $cat }}</option>
                         @endforeach
                     </x-select>
