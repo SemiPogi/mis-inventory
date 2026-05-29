@@ -28,10 +28,11 @@ class RoleMiddlewareTest extends TestCase
         $this->actingAs($acc)->get('/users')->assertForbidden();
     }
 
-    public function test_staff_cannot_access_reports(): void
+    public function test_staff_can_access_reports(): void
     {
+        // Reports are now available to all roles, scoped to their department
         $staff = User::factory()->create(['role' => 'staff', 'is_active' => true]);
-        $this->actingAs($staff)->get('/reports')->assertForbidden();
+        $this->actingAs($staff)->get('/reports')->assertOk();
     }
 
     public function test_accounting_can_access_reports(): void
