@@ -6,57 +6,57 @@
     </x-page-header>
 
     @if($errors->any())
-        <x-bento-card>
+        <x-bento-card class="mb-4">
             <ul class="text-sm text-danger space-y-1">
                 @foreach($errors->all() as $err)<li>{{ $err }}</li>@endforeach
             </ul>
         </x-bento-card>
     @endif
 
-    <div x-data="{
-        components: [],
-        search: '',
-        addComponent(id, name, unit, maxQty) {
-            if (this.components.find(c => c.id == id)) return;
-            this.components.push({ id, name, unit, maxQty, qty_used: 1 });
-        },
-        removeComponent(id) { this.components = this.components.filter(c => c.id != id); },
-        get filteredItems() {
-            return {{ $items->map(fn($i) => ['id'=>$i->id,'name'=>$i->name,'unit'=>$i->unit,'qty'=>$i->current_qty])->values()->toJson() }}
-                .filter(i => i.name.toLowerCase().includes(this.search.toLowerCase()));
-        }
-    }" class="space-y-6">
+    <form method="POST" action="{{ route('assemblies.store') }}" class="space-y-6"
+          x-data="{
+              components: [],
+              search: '',
+              addComponent(id, name, unit, maxQty) {
+                  if (this.components.find(c => c.id == id)) return;
+                  this.components.push({ id, name, unit, maxQty, qty_used: 1 });
+              },
+              removeComponent(id) { this.components = this.components.filter(c => c.id != id); },
+              get filteredItems() {
+                  return {{ $items->map(fn($i) => ['id'=>$i->id,'name'=>$i->name,'unit'=>$i->unit,'qty'=>$i->current_qty])->values()->toJson() }}
+                      .filter(i => i.name.toLowerCase().includes(this.search.toLowerCase()));
+              }
+          }">
+        @csrf
 
         <x-bento-card>
-            <form method="POST" action="{{ route('assemblies.store') }}" id="asm-form" class="space-y-5">
-                @csrf
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="col-span-2">
-                        <x-label for="output_item_name">Output Item Name *</x-label>
-                        <x-input id="output_item_name" name="output_item_name" value="{{ old('output_item_name') }}"
-                                 placeholder="e.g. Assembled Wheelchair" required/>
-                        @error('output_item_name') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <x-label for="output_unit">Unit *</x-label>
-                        <x-input id="output_unit" name="output_unit" value="{{ old('output_unit', 'unit') }}" required/>
-                    </div>
+            <p class="text-sm font-semibold text-ink-heading mb-4">Output Item</p>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="col-span-2">
+                    <x-label for="output_item_name" required>Output Item Name</x-label>
+                    <x-input id="output_item_name" name="output_item_name" :value="old('output_item_name')"
+                             placeholder="e.g. Assembled Wheelchair" required/>
+                    @error('output_item_name') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <x-label for="qty_produced">Qty Produced *</x-label>
-                        <x-input type="number" id="qty_produced" name="qty_produced" value="{{ old('qty_produced', 1) }}" min="1" required/>
-                    </div>
+                <div>
+                    <x-label for="output_unit" required>Unit</x-label>
+                    <x-input id="output_unit" name="output_unit" :value="old('output_unit', 'unit')" required/>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                    <x-label for="qty_produced" required>Qty Produced</x-label>
+                    <x-input type="number" id="qty_produced" name="qty_produced" :value="old('qty_produced', 1)" min="1" required/>
                 </div>
                 <div>
                     <x-label for="notes">Notes (optional)</x-label>
-                    <textarea id="notes" name="notes" rows="2"
-                              class="w-full rounded-lg border border-surface-border bg-surface-tile text-ink-body px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">{{ old('notes') }}</textarea>
+                    <x-input id="notes" name="notes" :value="old('notes')" placeholder="Optional notes"/>
                 </div>
-            </form>
+            </div>
         </x-bento-card>
 
         <div class="grid grid-cols-2 gap-6">
+            {{-- Component picker --}}
             <x-bento-card>
                 <p class="text-sm font-medium text-ink-heading mb-3">Components (pick from inventory)</p>
                 <input type="text" x-model="search" placeholder="Search…"
@@ -77,8 +77,10 @@
                 @endif
             </x-bento-card>
 
+            {{-- Selected components --}}
             <x-bento-card>
                 <p class="text-sm font-medium text-ink-heading mb-3">Selected Components</p>
+                @error('components') <p class="mb-2 text-xs text-danger">{{ $message }}</p> @enderror
                 <div x-show="components.length === 0" class="text-xs text-ink-muted italic">No components selected.</div>
                 <div class="space-y-2">
                     <template x-for="(comp, idx) in components" :key="comp.id">
@@ -90,7 +92,7 @@
                             </div>
                             <input type="number" :name="`components[${idx}][qty_used]`" x-model.number="comp.qty_used"
                                    :max="comp.maxQty" min="1" required
-                                   class="w-20 rounded border border-surface-border bg-surface-tile text-ink-body px-2 py-1 text-sm text-center"/>
+                                   class="w-20 rounded border border-surface-border bg-surface-tile text-ink-body px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-primary-500"/>
                             <button type="button" @click="removeComponent(comp.id)" class="text-rose-400 hover:text-rose-600">
                                 <x-heroicon-o-trash class="w-4 h-4"/>
                             </button>
@@ -102,10 +104,10 @@
 
         <div class="flex justify-end gap-3">
             <x-button href="{{ route('assemblies.index') }}" variant="ghost">Cancel</x-button>
-            <x-button type="submit" form="asm-form" variant="primary"
-                      x-bind:disabled="components.length === 0">
+            <x-button type="submit" variant="primary" x-bind:disabled="components.length === 0">
                 <x-heroicon-o-wrench-screwdriver class="w-4 h-4"/> Record Assembly
             </x-button>
         </div>
-    </div>
+
+    </form>
 </x-app-layout>

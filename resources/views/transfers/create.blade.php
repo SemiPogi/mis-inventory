@@ -6,7 +6,7 @@
     </x-page-header>
 
     @if($errors->any())
-        <x-bento-card>
+        <x-bento-card class="mb-4">
             <ul class="text-sm text-danger space-y-1">
                 @foreach($errors->all() as $err)
                     <li>{{ $err }}</li>
@@ -15,27 +15,28 @@
         </x-bento-card>
     @endif
 
-    <div x-data="{
-        selectedItems: [],
-        addItem(id, name, unit, maxQty) {
-            if (this.selectedItems.find(i => i.id == id)) return;
-            this.selectedItems.push({ id, name, unit, maxQty, qty: 1 });
-        },
-        removeItem(id) { this.selectedItems = this.selectedItems.filter(i => i.id != id); },
-        search: '',
-        get filtered() {
-            return {{ $items->map(fn($i) => ['id'=>$i->id,'name'=>$i->name,'unit'=>$i->unit,'qty'=>$i->current_qty])->values()->toJson() }}.filter(i =>
-                i.name.toLowerCase().includes(this.search.toLowerCase())
-            );
-        }
-    }" class="space-y-6">
+    <form method="POST" action="{{ route('transfers.store') }}" class="space-y-6"
+          x-data="{
+              selectedItems: [],
+              addItem(id, name, unit, maxQty) {
+                  if (this.selectedItems.find(i => i.id == id)) return;
+                  this.selectedItems.push({ id, name, unit, maxQty, qty: 1 });
+              },
+              removeItem(id) { this.selectedItems = this.selectedItems.filter(i => i.id != id); },
+              search: '',
+              get filtered() {
+                  return {{ $items->map(fn($i) => ['id'=>$i->id,'name'=>$i->name,'unit'=>$i->unit,'qty'=>$i->current_qty])->values()->toJson() }}.filter(i =>
+                      i.name.toLowerCase().includes(this.search.toLowerCase())
+                  );
+              }
+          }">
+        @csrf
 
         <x-bento-card>
-            <form method="POST" action="{{ route('transfers.store') }}" id="transfer-form" class="space-y-5">
-                @csrf
-
+            <p class="text-sm font-semibold text-ink-heading mb-4">Transfer Details</p>
+            <div class="space-y-4">
                 <div>
-                    <x-label for="to_dept_id">Transfer To Department *</x-label>
+                    <x-label for="to_dept_id" required>Transfer To Department</x-label>
                     <x-select id="to_dept_id" name="to_dept_id" required>
                         <option value="">— Select destination —</option>
                         @foreach($departments as $dept)
@@ -46,22 +47,20 @@
                     </x-select>
                     @error('to_dept_id') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                 </div>
-
                 <div>
-                    <x-label for="purpose">Purpose *</x-label>
+                    <x-label for="purpose" required>Purpose</x-label>
                     <textarea id="purpose" name="purpose" rows="2" required
                               class="w-full rounded-lg border border-surface-border bg-surface-tile text-ink-body px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                               placeholder="Reason for transfer…">{{ old('purpose') }}</textarea>
                     @error('purpose') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                 </div>
-
                 <div>
                     <x-label for="notes">Notes (optional)</x-label>
                     <textarea id="notes" name="notes" rows="2"
-                              class="w-full rounded-lg border border-surface-border bg-surface-tile text-ink-body px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              class="w-full rounded-lg border border-surface-border bg-surface-tile text-ink-body px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                               placeholder="Additional notes…">{{ old('notes') }}</textarea>
                 </div>
-            </form>
+            </div>
         </x-bento-card>
 
         <div class="grid grid-cols-2 gap-6">
@@ -90,6 +89,7 @@
             {{-- Selected items --}}
             <x-bento-card>
                 <p class="text-sm font-medium text-ink-heading mb-3">Items to Transfer</p>
+                @error('items') <p class="mb-2 text-xs text-danger">{{ $message }}</p> @enderror
                 <div x-show="selectedItems.length === 0" class="text-xs text-ink-muted italic">Select items from the left panel.</div>
                 <div class="space-y-2">
                     <template x-for="(item, idx) in selectedItems" :key="item.id">
@@ -113,11 +113,11 @@
 
         <div class="flex justify-end gap-3">
             <x-button href="{{ route('transfers.index') }}" variant="ghost">Cancel</x-button>
-            <x-button type="submit" form="transfer-form" variant="primary"
-                      x-bind:disabled="selectedItems.length === 0">
+            <x-button type="submit" variant="primary" x-bind:disabled="selectedItems.length === 0">
                 <x-heroicon-o-paper-airplane class="w-4 h-4"/>
                 Submit for Head Approval
             </x-button>
         </div>
-    </div>
+
+    </form>
 </x-app-layout>

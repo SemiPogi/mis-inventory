@@ -5,41 +5,43 @@
         </x-slot>
     </x-page-header>
 
-    <div x-data="{
-        items: [{ stock_no: '', item_name: '', unit: 'pcs', requested_qty: 1, remarks: '' }],
-        addItem() { this.items.push({ stock_no: '', item_name: '', unit: 'pcs', requested_qty: 1, remarks: '' }); },
-        removeItem(i) { if (this.items.length > 1) this.items.splice(i, 1); }
-    }" class="space-y-6">
+    <form method="POST" action="{{ route('ris.store') }}" class="space-y-6"
+          x-data="{
+              items: [{ stock_no: '', item_name: '', unit: 'pcs', requested_qty: 1, remarks: '' }],
+              addItem() { this.items.push({ stock_no: '', item_name: '', unit: 'pcs', requested_qty: 1, remarks: '' }); },
+              removeItem(i) { if (this.items.length > 1) this.items.splice(i, 1); }
+          }">
+        @csrf
 
         <x-bento-card>
-            <form method="POST" action="{{ route('ris.store') }}" class="space-y-5" id="ris-form">
-                @csrf
-
+            <p class="text-sm font-semibold text-ink-heading mb-4">Request Details</p>
+            <div class="space-y-4">
                 <div>
-                    <x-label for="purpose">Purpose / Justification</x-label>
+                    <x-label for="purpose" required>Purpose / Justification</x-label>
                     <textarea id="purpose" name="purpose" rows="3"
                               class="w-full rounded-lg border border-surface-border bg-surface-tile text-ink-body px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                               placeholder="State the purpose of this requisition…" required>{{ old('purpose') }}</textarea>
                     @error('purpose') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                 </div>
-
                 <div>
                     <x-label for="notes">Additional Notes (optional)</x-label>
                     <textarea id="notes" name="notes" rows="2"
-                              class="w-full rounded-lg border border-surface-border bg-surface-tile text-ink-body px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              class="w-full rounded-lg border border-surface-border bg-surface-tile text-ink-body px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                               placeholder="Any additional information…">{{ old('notes') }}</textarea>
                 </div>
-            </form>
+            </div>
         </x-bento-card>
 
         <x-bento-card>
             <div class="flex items-center justify-between mb-4">
-                <p class="text-sm font-medium text-ink-heading">Requested Items</p>
+                <p class="text-sm font-semibold text-ink-heading">Requested Items</p>
                 <button type="button" @click="addItem()"
                         class="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700">
-                    <x-heroicon-o-plus class="w-4 h-4"/> Add Item
+                    <x-heroicon-o-plus class="w-4 h-4"/> Add Row
                 </button>
             </div>
+
+            @error('items') <p class="mb-3 text-xs text-danger">{{ $message }}</p> @enderror
 
             <div class="space-y-3">
                 <template x-for="(item, i) in items" :key="i">
@@ -51,19 +53,19 @@
                                    placeholder="Optional"/>
                         </div>
                         <div class="col-span-4">
-                            <label class="text-xs text-ink-muted mb-1 block">Item Name *</label>
+                            <label class="text-xs text-ink-muted mb-1 block">Item Name <span class="text-danger">*</span></label>
                             <input type="text" :name="`items[${i}][item_name]`" x-model="item.item_name" required
                                    class="w-full rounded border border-surface-border bg-surface-tile text-ink-body px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                                    placeholder="e.g. Bond Paper A4"/>
                         </div>
                         <div class="col-span-2">
-                            <label class="text-xs text-ink-muted mb-1 block">Unit *</label>
+                            <label class="text-xs text-ink-muted mb-1 block">Unit <span class="text-danger">*</span></label>
                             <input type="text" :name="`items[${i}][unit]`" x-model="item.unit" required
                                    class="w-full rounded border border-surface-border bg-surface-tile text-ink-body px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                                    placeholder="pcs"/>
                         </div>
                         <div class="col-span-2">
-                            <label class="text-xs text-ink-muted mb-1 block">Qty *</label>
+                            <label class="text-xs text-ink-muted mb-1 block">Qty <span class="text-danger">*</span></label>
                             <input type="number" :name="`items[${i}][requested_qty]`" x-model.number="item.requested_qty" min="1" required
                                    class="w-full rounded border border-surface-border bg-surface-tile text-ink-body px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"/>
                         </div>
@@ -86,10 +88,11 @@
 
         <div class="flex justify-end gap-3">
             <x-button href="{{ route('ris.index') }}" variant="ghost">Cancel</x-button>
-            <x-button type="submit" form="ris-form" variant="primary">
+            <x-button type="submit" variant="primary">
                 <x-heroicon-o-paper-airplane class="w-4 h-4"/>
                 Submit RIS for Approval
             </x-button>
         </div>
-    </div>
+
+    </form>
 </x-app-layout>
