@@ -15,11 +15,11 @@ class RisHeadController extends Controller
 {
     public function index(): View
     {
-        $deptId = auth()->user()->department_id;
+        $user = auth()->user();
 
-        $pending = RisRequest::with(['requestedBy', 'items'])
-            ->where('requesting_dept_id', $deptId)
+        $pending = RisRequest::with(['requestedBy', 'requestingDept', 'items'])
             ->where('status', 'pending_head')
+            ->when(! $user->isAdmin(), fn($q) => $q->where('requesting_dept_id', $user->department_id))
             ->latest()
             ->get();
 
@@ -79,6 +79,8 @@ class RisHeadController extends Controller
     private function authorizeHead(RisRequest $ris): void
     {
         $user = auth()->user();
+        // Admin can approve any RIS; dept heads can only approve their own dept
+        if ($user->isAdmin()) return;
         if (! $user->is_head || $user->department_id !== $ris->requesting_dept_id) {
             abort(403, 'Only the department head can approve this RIS.');
         }
