@@ -11,29 +11,45 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $totalInStock = Item::where('current_qty', '>', 0)->count();
-        $totalReleased = Transaction::where('type', 'released')->count();
+        $scope = auth()->user()->departmentScope();
+
+        $totalInStock = Item::where('current_qty', '>', 0)
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->count();
+
+        $totalReleased = Transaction::where('type', 'released')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->count();
+
         $pendingAck = Transaction::where('type', 'released')
-            ->where('acknowledgment_status', 'pending')->count();
+            ->where('acknowledgment_status', 'pending')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->count();
+
         $acknowledged = Transaction::where('type', 'released')
-            ->where('acknowledgment_status', 'acknowledged')->count();
+            ->where('acknowledgment_status', 'acknowledged')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->count();
 
         $pendingTransactions = Transaction::where('type', 'released')
             ->where('acknowledgment_status', 'pending')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->latest()
             ->limit(8)
             ->get();
 
-        $weeklyActivity = collect(range(6, 0))->map(function ($daysAgo) {
+        $weeklyActivity = collect(range(6, 0))->map(function ($daysAgo) use ($scope) {
             $date = Carbon::today()->subDays($daysAgo);
             return Transaction::where('type', 'released')
                 ->whereDate('date_released', $date)
+                ->when($scope, fn($q) => $q->where('department_id', $scope))
                 ->count();
         })->all();
 
         $startOfMonth = Carbon::now()->startOfMonth();
         $topOffice = Transaction::where('type', 'released')
             ->where('date_released', '>=', $startOfMonth)
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->selectRaw('released_to_office, COUNT(*) as c')
             ->groupBy('released_to_office')
             ->orderByDesc('c')
@@ -41,6 +57,7 @@ class DashboardController extends Controller
 
         $topItem = Transaction::where('type', 'released')
             ->where('date_released', '>=', $startOfMonth)
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->selectRaw('item_name_snapshot, COUNT(*) as c')
             ->groupBy('item_name_snapshot')
             ->orderByDesc('c')
@@ -49,16 +66,25 @@ class DashboardController extends Controller
         $pcThisMonth = PettyCashVoucher::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->whereIn('status', ['submitted', 'acknowledged', 'settled'])
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->sum('total_amount');
 
         $pcVouchersThisMonth = PettyCashVoucher::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->count();
 
-        $pcPendingAck    = PettyCashVoucher::where('status', 'submitted')->count();
-        $pcPendingSettle = PettyCashVoucher::where('status', 'acknowledged')->count();
+        $pcPendingAck = PettyCashVoucher::where('status', 'submitted')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->count();
 
-        $recentVouchers = PettyCashVoucher::with('creator')->latest()->limit(5)->get();
+        $pcPendingSettle = PettyCashVoucher::where('status', 'acknowledged')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->count();
+
+        $recentVouchers = PettyCashVoucher::with('creator')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->latest()->limit(5)->get();
 
         return view('dashboard', compact(
             'totalInStock',

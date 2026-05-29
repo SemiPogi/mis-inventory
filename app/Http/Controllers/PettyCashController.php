@@ -15,7 +15,9 @@ class PettyCashController extends Controller
 {
     public function index(): View
     {
+        $scope = $this->deptScope();
         $vouchers = PettyCashVoucher::with('creator')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->latest()
             ->paginate(20);
 
@@ -69,6 +71,7 @@ class PettyCashController extends Controller
                 'status'            => 'submitted',
                 'created_by'        => auth()->id(),
                 'remarks'           => $data['remarks'] ?? null,
+                'department_id'     => auth()->user()->department_id,
             ]);
 
             foreach ($data['items'] as $line) {

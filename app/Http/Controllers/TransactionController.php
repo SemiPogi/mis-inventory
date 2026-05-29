@@ -9,7 +9,8 @@ class TransactionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Transaction::query();
+        $scope = $this->deptScope();
+        $query = Transaction::when($scope, fn($q) => $q->where('department_id', $scope));
 
         if ($request->type) {
             $query->where('type', $request->type);
@@ -47,6 +48,10 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction)
     {
+        $scope = $this->deptScope();
+        if ($scope && $transaction->department_id !== $scope) {
+            abort(403);
+        }
         return view('transactions-show', compact('transaction'));
     }
 }

@@ -58,11 +58,21 @@ class ReportController extends Controller
         return view('reports.index', compact('headers', 'rows', 'title', 'type') + ['tab' => 'petty-cash']);
     }
 
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    private function scope(): ?int
+    {
+        return auth()->user()->departmentScope();
+    }
+
     // ── Inventory reports ──────────────────────────────────────────────────
 
     private function receivedItems(Request $request): array
     {
-        $q = Transaction::where('type', 'received')->latest('date_received');
+        $scope = $this->scope();
+        $q = Transaction::where('type', 'received')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->latest('date_received');
         if ($request->filled('from')) $q->whereDate('date_received', '>=', $request->from);
         if ($request->filled('to'))   $q->whereDate('date_received', '<=', $request->to);
         if ($request->filled('item')) $q->where('item_name_snapshot', 'like', '%' . $request->item . '%');
@@ -81,7 +91,10 @@ class ReportController extends Controller
 
     private function releasedItems(Request $request): array
     {
-        $q = Transaction::where('type', 'released')->latest('date_released');
+        $scope = $this->scope();
+        $q = Transaction::where('type', 'released')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->latest('date_released');
         if ($request->filled('from'))   $q->whereDate('date_released', '>=', $request->from);
         if ($request->filled('to'))     $q->whereDate('date_released', '<=', $request->to);
         if ($request->filled('item'))   $q->where('item_name_snapshot', 'like', '%' . $request->item . '%');
@@ -102,7 +115,9 @@ class ReportController extends Controller
 
     private function stockMovement(Request $request): array
     {
-        $q = Transaction::orderBy('created_at');
+        $scope = $this->scope();
+        $q = Transaction::when($scope, fn($q) => $q->where('department_id', $scope))
+            ->orderBy('created_at');
         if ($request->filled('item')) $q->where('item_name_snapshot', 'like', '%' . $request->item . '%');
         if ($request->filled('from')) $q->where(fn($q) =>
             $q->whereDate('date_received', '>=', $request->from)
@@ -124,7 +139,9 @@ class ReportController extends Controller
 
     private function stockSnapshot(): array
     {
-        $rows = Item::orderBy('name')->get()->map(fn($i) => [
+        $scope = $this->scope();
+        $rows = Item::when($scope, fn($q) => $q->where('department_id', $scope))
+            ->orderBy('name')->get()->map(fn($i) => [
             $i->name, $i->unit, $i->current_qty, $i->total_qty_received,
         ])->toArray();
 
@@ -133,7 +150,9 @@ class ReportController extends Controller
 
     private function acknowledgementStatus(Request $request): array
     {
-        $q = Transaction::where('type', 'released');
+        $scope = $this->scope();
+        $q = Transaction::where('type', 'released')
+            ->when($scope, fn($q) => $q->where('department_id', $scope));
         if ($request->filled('status')) $q->where('acknowledgment_status', $request->status);
         if ($request->filled('from'))   $q->whereDate('date_released', '>=', $request->from);
         if ($request->filled('to'))     $q->whereDate('date_released', '<=', $request->to);
@@ -159,7 +178,10 @@ class ReportController extends Controller
 
     private function voucherLedger(Request $request): array
     {
-        $q = PettyCashVoucher::with('creator')->latest();
+        $scope = $this->scope();
+        $q = PettyCashVoucher::with('creator')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->latest();
         if ($request->filled('from'))    $q->whereDate('date_purchased', '>=', $request->from);
         if ($request->filled('to'))      $q->whereDate('date_purchased', '<=', $request->to);
         if ($request->filled('status'))  $q->where('status', $request->status);
@@ -188,8 +210,10 @@ class ReportController extends Controller
     private function monthlySummary(Request $request): array
     {
         $year = $request->input('year', now()->year);
+        $scope = $this->scope();
 
-        $rows = PettyCashVoucher::selectRaw('MONTH(date_purchased) as month,
+        $rows = PettyCashVoucher::when($scope, fn($q) => $q->where('department_id', $scope))
+            ->selectRaw('MONTH(date_purchased) as month,
                 SUM(requested_amount) as total_requested,
                 SUM(total_amount) as total_spent,
                 SUM(transport_fee) as total_transport,
@@ -217,7 +241,9 @@ class ReportController extends Controller
 
     private function outstandingChanges(): array
     {
+        $scope = $this->scope();
         $rows = PettyCashVoucher::whereIn('status', ['submitted', 'acknowledged'])
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->where('change_amount', '>', 0)
             ->with('creator')
             ->latest()
@@ -241,7 +267,9 @@ class ReportController extends Controller
 
     private function itemPurchaseHistory(Request $request): array
     {
+        $scope = $this->scope();
         $q = PettyCashItem::join('petty_cash_vouchers', 'petty_cash_items.petty_cash_voucher_id', '=', 'petty_cash_vouchers.id')
+            ->when($scope, fn($q) => $q->where('petty_cash_vouchers.department_id', $scope))
             ->orderByDesc('petty_cash_vouchers.date_purchased')
             ->select('petty_cash_items.*');
 

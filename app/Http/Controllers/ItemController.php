@@ -11,7 +11,8 @@ class ItemController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Item::query();
+        $scope = $this->deptScope();
+        $query = Item::when($scope, fn($q) => $q->where('department_id', $scope));
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
@@ -31,7 +32,8 @@ class ItemController extends Controller
             return $item;
         });
 
-        $categories = Item::select('category')
+        $categories = Item::when($scope, fn($q) => $q->where('department_id', $scope))
+            ->select('category')
             ->distinct()
             ->whereNotNull('category')
             ->pluck('category');
@@ -41,6 +43,10 @@ class ItemController extends Controller
 
     public function show(Item $item)
     {
+        $scope = $this->deptScope();
+        if ($scope && $item->department_id !== $scope) {
+            abort(403);
+        }
         $transactions = $item->transactions()->latest()->get();
         $movement30 = $this->movement30($item);
         return view('items-show', compact('item', 'transactions', 'movement30'));

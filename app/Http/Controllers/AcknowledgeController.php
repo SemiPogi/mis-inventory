@@ -9,13 +9,17 @@ class AcknowledgeController extends Controller
 {
     public function index()
     {
+        $scope = $this->deptScope();
+
         $pending = Transaction::where('type', 'released')
             ->where('acknowledgment_status', 'pending')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->latest()
             ->get();
 
         $acknowledged = Transaction::where('type', 'released')
             ->where('acknowledgment_status', 'acknowledged')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->latest()
             ->get();
 
@@ -24,15 +28,20 @@ class AcknowledgeController extends Controller
 
     public function update(Request $request, Transaction $transaction)
     {
+        $scope = $this->deptScope();
+        if ($scope && $transaction->department_id !== $scope) {
+            abort(403);
+        }
+
         $request->validate([
             'acknowledged_by_name' => 'required|string',
-            'acknowledged_date' => 'required|date',
+            'acknowledged_date'    => 'required|date',
         ]);
 
         $transaction->update([
-            'acknowledgment_status' => 'acknowledged',
-            'acknowledged_by_name' => $request->acknowledged_by_name,
-            'acknowledged_date' => $request->acknowledged_date,
+            'acknowledgment_status'  => 'acknowledged',
+            'acknowledged_by_name'   => $request->acknowledged_by_name,
+            'acknowledged_date'      => $request->acknowledged_date,
             'acknowledgment_remarks' => $request->acknowledgment_remarks,
         ]);
 
