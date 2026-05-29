@@ -30,6 +30,23 @@
     } elseif ($user->canSettleVoucher()) {
         $pcBadge = \App\Models\PettyCashVoucher::where('status', 'acknowledged')->count();
     }
+
+    // RIS: head queue badge — pending_head for this user's dept
+    $risHeadBadge = 0;
+    if ($user->is_head && $user->department_id) {
+        $risHeadBadge = \App\Models\RisRequest::where('status', 'pending_head')
+            ->where('requesting_dept_id', $user->department_id)
+            ->count();
+    } elseif ($user->isAdmin()) {
+        $risHeadBadge = \App\Models\RisRequest::where('status', 'pending_head')->count();
+    }
+
+    // RIS: supply queue badge — pending_supply count
+    $risSupplyBadge = 0;
+    $supplyHub = \App\Models\Department::supplyHub();
+    if ($user->isAdmin() || ($supplyHub && $user->department_id === $supplyHub->id)) {
+        $risSupplyBadge = \App\Models\RisRequest::where('status', 'pending_supply')->count();
+    }
 @endphp
 
 <div class="flex min-h-screen" x-data="{ collapsed: localStorage.getItem('sidebar-collapsed') === '1' }">
@@ -83,6 +100,68 @@
                 </span>
                 <span x-show="!collapsed" x-transition.opacity>Petty Cash</span>
             </a>
+
+            {{-- ── RIS section ── --}}
+            @php $risActive = request()->is('ris*') || request()->is('ris-head*') || request()->is('ris-supply*'); @endphp
+            @if($risActive)
+                <div x-show="!collapsed" x-transition.opacity class="pt-2 pb-1 px-3">
+                    <p class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Requisitions</p>
+                </div>
+            @endif
+
+            {{-- My RIS (all roles) --}}
+            @php $myRisActive = request()->routeIs('ris.index') || request()->routeIs('ris.show') || request()->routeIs('ris.create'); @endphp
+            <a href="{{ route('ris.index') }}"
+               class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                      {{ $myRisActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                @if($myRisActive)
+                    <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                @endif
+                <x-heroicon-o-clipboard-document-list class="w-5 h-5 shrink-0"/>
+                <span x-show="!collapsed" x-transition.opacity>My RIS</span>
+            </a>
+
+            {{-- Head Approval Queue (dept heads + admin) --}}
+            @if($user->is_head || $user->isAdmin())
+                @php $headActive = request()->routeIs('ris.head.*'); @endphp
+                <a href="{{ route('ris.head.index') }}"
+                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                          {{ $headActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                    @if($headActive)
+                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                    @endif
+                    <span class="relative shrink-0">
+                        <x-heroicon-o-check-badge class="w-5 h-5"/>
+                        @if($risHeadBadge > 0)
+                            <span class="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                {{ $risHeadBadge > 9 ? '9+' : $risHeadBadge }}
+                            </span>
+                        @endif
+                    </span>
+                    <span x-show="!collapsed" x-transition.opacity>RIS Approvals</span>
+                </a>
+            @endif
+
+            {{-- Supply Queue (supply hub staff + admin) --}}
+            @if($user->isAdmin() || ($supplyHub && $user->department_id === $supplyHub->id))
+                @php $supplyActive = request()->routeIs('ris.supply.*'); @endphp
+                <a href="{{ route('ris.supply.index') }}"
+                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                          {{ $supplyActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                    @if($supplyActive)
+                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                    @endif
+                    <span class="relative shrink-0">
+                        <x-heroicon-o-inbox-stack class="w-5 h-5"/>
+                        @if($risSupplyBadge > 0)
+                            <span class="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                {{ $risSupplyBadge > 9 ? '9+' : $risSupplyBadge }}
+                            </span>
+                        @endif
+                    </span>
+                    <span x-show="!collapsed" x-transition.opacity>Supply Queue</span>
+                </a>
+            @endif
 
             {{-- Reports (accounting + admin) --}}
             @if($user->canAccessReports())

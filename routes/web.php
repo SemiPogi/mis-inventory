@@ -11,6 +11,9 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\RisController;
+use App\Http\Controllers\RisHeadController;
+use App\Http\Controllers\RisSupplyController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -51,6 +54,28 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/inventory/{type}', [ReportController::class, 'inventory'])->name('reports.inventory');
         Route::get('/reports/petty-cash/{type}', [ReportController::class, 'pettyCash'])->name('reports.petty-cash');
+
+        // RIS — read-only for accounting; full access handled per-controller
+        Route::get('/ris', [RisController::class, 'index'])->name('ris.index');
+        Route::get('/ris/{ris}', [RisController::class, 'show'])->name('ris.show');
+        Route::get('/ris/{ris}/print', [RisController::class, 'print'])->name('ris.print');
+    });
+
+    // ── RIS — staff + admin (create / mutate) ─────────────────────────────
+    Route::middleware('role:admin,staff')->group(function () {
+        Route::get('/ris/create', [RisController::class, 'create'])->name('ris.create');
+        Route::post('/ris', [RisController::class, 'store'])->name('ris.store');
+        Route::patch('/ris/{ris}/acknowledge', [RisController::class, 'acknowledge'])->name('ris.acknowledge');
+
+        // Dept Head approval queue (authorizeHead() enforces is_head + dept match)
+        Route::get('/ris-head', [RisHeadController::class, 'index'])->name('ris.head.index');
+        Route::patch('/ris/{ris}/head-approve', [RisHeadController::class, 'approve'])->name('ris.head.approve');
+        Route::patch('/ris/{ris}/head-reject', [RisHeadController::class, 'reject'])->name('ris.head.reject');
+
+        // Supply queue (authorizeSupply() enforces supply-hub membership or admin)
+        Route::get('/ris-supply', [RisSupplyController::class, 'index'])->name('ris.supply.index');
+        Route::get('/ris/{ris}/supply-review', [RisSupplyController::class, 'review'])->name('ris.supply.review');
+        Route::patch('/ris/{ris}/supply-issue', [RisSupplyController::class, 'issue'])->name('ris.supply.issue');
     });
 
     // ── Accounting + Admin: settle ────────────────────────────────────────

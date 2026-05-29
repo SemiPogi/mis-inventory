@@ -39,7 +39,8 @@ class RisHeadController extends Controller
             'head_approved_at'     => now(),
         ]);
 
-        return back()->with('success', "{$ris->ris_number} approved and sent to Supply.");
+        return redirect()->route('ris.head.index')
+            ->with('success', "{$ris->ris_number} approved and sent to Supply.");
     }
 
     public function reject(Request $request, RisRequest $ris): RedirectResponse
@@ -57,7 +58,8 @@ class RisHeadController extends Controller
             'notes'  => $request->notes,
         ]);
 
-        return back()->with('success', "{$ris->ris_number} rejected.");
+        return redirect()->route('ris.head.index')
+            ->with('success', "{$ris->ris_number} rejected.");
     }
 
     private function authorizeHead(RisRequest $ris): void
