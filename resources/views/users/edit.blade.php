@@ -42,6 +42,29 @@
                     @enderror
                 </div>
 
+                <div>
+                    <x-label for="department_id">Department</x-label>
+                    <x-select id="department_id" name="department_id">
+                        <option value="">— No department (Admin / Accounting) —</option>
+                        @foreach($departments as $dept)
+                            <option value="{{ $dept->id }}" @selected(old('department_id', $user->department_id) == $dept->id)>
+                                {{ $dept->name }} ({{ $dept->code }})
+                            </option>
+                        @endforeach
+                    </x-select>
+                    <p class="mt-1 text-xs text-ink-muted">Leave blank for Admin and Accounting roles.</p>
+                    @error('department_id') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="is_head" name="is_head" value="1"
+                           class="rounded border-surface-border text-primary-600"
+                           {{ old('is_head', $user->is_head) ? 'checked' : '' }}>
+                    <label for="is_head" class="text-sm text-ink-body">
+                        Designate as <strong>Department Head</strong> (can approve RIS and transfers)
+                    </label>
+                </div>
+
                 <div class="border-t border-surface-border pt-4">
                     <p class="text-xs text-ink-muted mb-3">Leave password fields blank to keep the current password.</p>
 
