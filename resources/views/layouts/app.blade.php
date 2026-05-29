@@ -47,6 +47,28 @@
     if ($user->isAdmin() || ($supplyHub && $user->department_id === $supplyHub->id)) {
         $risSupplyBadge = \App\Models\RisRequest::where('status', 'pending_supply')->count();
     }
+
+    // Transfer head queue badge
+    $transferHeadBadge = 0;
+    if ($user->is_head && $user->department_id) {
+        $transferHeadBadge = \App\Models\DepartmentTransfer::where('status', 'pending_head')
+            ->where('from_dept_id', $user->department_id)
+            ->count();
+    } elseif ($user->isAdmin()) {
+        $transferHeadBadge = \App\Models\DepartmentTransfer::where('status', 'pending_head')->count();
+    }
+
+    // Unread notifications count
+    $notifCount = \App\Models\Notification::where('user_id', $user->id)->whereNull('read_at')->count();
+
+    // Low stock items (supply hub items below min_stock_qty)
+    $lowStockCount = 0;
+    if ($supplyHub) {
+        $lowStockCount = \App\Models\Item::where('department_id', $supplyHub->id)
+            ->where('min_stock_qty', '>', 0)
+            ->whereColumn('current_qty', '<', 'min_stock_qty')
+            ->count();
+    }
 @endphp
 
 <div class="flex min-h-screen" x-data="{ collapsed: localStorage.getItem('sidebar-collapsed') === '1' }">
@@ -163,6 +185,64 @@
                 </a>
             @endif
 
+            {{-- ── Transfers section ── --}}
+            @php $transferActive = request()->routeIs('transfers.*'); @endphp
+            <a href="{{ route('transfers.index') }}"
+               class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                      {{ $transferActive && !request()->routeIs('transfers.head.*') ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                @if($transferActive && !request()->routeIs('transfers.head.*'))
+                    <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                @endif
+                <x-heroicon-o-arrows-right-left class="w-5 h-5 shrink-0"/>
+                <span x-show="!collapsed" x-transition.opacity>Transfers</span>
+            </a>
+
+            @if($user->is_head || $user->isAdmin())
+                @php $tHeadActive = request()->routeIs('transfers.head.*'); @endphp
+                <a href="{{ route('transfers.head.index') }}"
+                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                          {{ $tHeadActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                    @if($tHeadActive)
+                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                    @endif
+                    <span class="relative shrink-0">
+                        <x-heroicon-o-check-badge class="w-5 h-5"/>
+                        @if($transferHeadBadge > 0)
+                            <span class="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                {{ $transferHeadBadge > 9 ? '9+' : $transferHeadBadge }}
+                            </span>
+                        @endif
+                    </span>
+                    <span x-show="!collapsed" x-transition.opacity>Transfer Approvals</span>
+                </a>
+            @endif
+
+            {{-- Assemblies --}}
+            @php $asmActive = request()->routeIs('assemblies.*'); @endphp
+            <a href="{{ route('assemblies.index') }}"
+               class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                      {{ $asmActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                @if($asmActive)
+                    <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                @endif
+                <x-heroicon-o-wrench-screwdriver class="w-5 h-5 shrink-0"/>
+                <span x-show="!collapsed" x-transition.opacity>Assemblies</span>
+            </a>
+
+            {{-- IAR (supply + admin) --}}
+            @if($user->isAdmin() || ($supplyHub && $user->department_id === $supplyHub->id))
+                @php $iarActive = request()->routeIs('iar.*'); @endphp
+                <a href="{{ route('iar.index') }}"
+                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                          {{ $iarActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                    @if($iarActive)
+                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                    @endif
+                    <x-heroicon-o-document-check class="w-5 h-5 shrink-0"/>
+                    <span x-show="!collapsed" x-transition.opacity>IAR Records</span>
+                </a>
+            @endif
+
             {{-- Reports (accounting + admin) --}}
             @if($user->canAccessReports())
                 @php $repActive = request()->is('reports*'); @endphp
@@ -202,9 +282,36 @@
                     <span x-show="!collapsed" x-transition.opacity>Departments</span>
                 </a>
             @endif
+
+            {{-- Notifications --}}
+            @php $notifActive = request()->routeIs('notifications.*'); @endphp
+            <a href="{{ route('notifications.index') }}"
+               class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                      {{ $notifActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                @if($notifActive)
+                    <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                @endif
+                <span class="relative shrink-0">
+                    <x-heroicon-o-bell class="w-5 h-5"/>
+                    @if($notifCount > 0)
+                        <span class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                            {{ $notifCount > 9 ? '9+' : $notifCount }}
+                        </span>
+                    @endif
+                </span>
+                <span x-show="!collapsed" x-transition.opacity>Notifications</span>
+            </a>
         </nav>
 
         <div class="px-5 py-4 border-t border-surface-border" x-show="!collapsed" x-transition.opacity>
+            {{-- Low stock alert (supply staff + admin) --}}
+            @if($lowStockCount > 0 && ($user->isAdmin() || ($supplyHub && $user->department_id === $supplyHub->id)))
+                <div class="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p class="text-xs font-medium text-amber-700">
+                        ⚠ {{ $lowStockCount }} item{{ $lowStockCount > 1 ? 's' : '' }} below min stock
+                    </p>
+                </div>
+            @endif
             <p class="text-sm font-medium text-ink-heading truncate">{{ auth()->user()->name }}</p>
             <p class="text-xs text-ink-muted truncate">{{ auth()->user()->email }}</p>
             @if(auth()->user()->department)

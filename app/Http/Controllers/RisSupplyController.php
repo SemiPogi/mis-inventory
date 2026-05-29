@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Models\Item;
+use App\Models\Notification;
 use App\Models\RisRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -101,6 +103,16 @@ class RisSupplyController extends Controller
             'issued_by_id'          => auth()->id(),
             'issued_at'             => now(),
         ]);
+
+        // Notify all staff in the requesting dept that items have been issued
+        $deptStaff = User::where('department_id', $ris->requesting_dept_id)->get();
+        foreach ($deptStaff as $staff) {
+            Notification::notify($staff, 'ris_issued',
+                'RIS Issued',
+                "{$ris->ris_number} has been issued by Supply. Please acknowledge receipt.",
+                ['url' => route('ris.show', $ris)]
+            );
+        }
 
         return redirect()->route('ris.supply.index')
             ->with('success', "{$ris->ris_number} issued. Awaiting acknowledgement from {$ris->requestingDept->name}.");

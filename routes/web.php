@@ -14,6 +14,11 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RisController;
 use App\Http\Controllers\RisHeadController;
 use App\Http\Controllers\RisSupplyController;
+use App\Http\Controllers\TransferController;
+use App\Http\Controllers\AssemblyController;
+use App\Http\Controllers\IarController;
+use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -59,6 +64,20 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ris', [RisController::class, 'index'])->name('ris.index');
         Route::get('/ris/{ris}', [RisController::class, 'show'])->name('ris.show');
         Route::get('/ris/{ris}/print', [RisController::class, 'print'])->name('ris.print');
+
+        // Transfers — view for all (accounting can view; mutations in staff group)
+        Route::get('/transfers', [TransferController::class, 'index'])->name('transfers.index');
+        Route::get('/transfers/{transfer}', [TransferController::class, 'show'])->name('transfers.show');
+
+        // Assemblies — view for all
+        Route::get('/assemblies', [AssemblyController::class, 'index'])->name('assemblies.index');
+        Route::get('/assemblies/{assembly}', [AssemblyController::class, 'show'])->name('assemblies.show');
+
+        // Notifications — all roles
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+        Route::get('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+        Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
     });
 
     // ── RIS — staff + admin (create / mutate) ─────────────────────────────
@@ -76,6 +95,30 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ris-supply', [RisSupplyController::class, 'index'])->name('ris.supply.index');
         Route::get('/ris/{ris}/supply-review', [RisSupplyController::class, 'review'])->name('ris.supply.review');
         Route::patch('/ris/{ris}/supply-issue', [RisSupplyController::class, 'issue'])->name('ris.supply.issue');
+
+        // Transfers — create/mutate (head enforcement in controller)
+        Route::get('/transfers/create', [TransferController::class, 'create'])->name('transfers.create');
+        Route::post('/transfers', [TransferController::class, 'store'])->name('transfers.store');
+        Route::get('/transfers-head', [TransferController::class, 'headQueue'])->name('transfers.head.index');
+        Route::patch('/transfers/{transfer}/approve', [TransferController::class, 'approve'])->name('transfers.approve');
+        Route::patch('/transfers/{transfer}/reject', [TransferController::class, 'reject'])->name('transfers.reject');
+        Route::patch('/transfers/{transfer}/acknowledge', [TransferController::class, 'acknowledge'])->name('transfers.acknowledge');
+
+        // Assemblies — create
+        Route::get('/assemblies/create', [AssemblyController::class, 'create'])->name('assemblies.create');
+        Route::post('/assemblies', [AssemblyController::class, 'store'])->name('assemblies.store');
+
+        // IAR — supply only (controller enforces)
+        Route::get('/iar', [IarController::class, 'index'])->name('iar.index');
+        Route::get('/iar/create', [IarController::class, 'create'])->name('iar.create');
+        Route::post('/iar', [IarController::class, 'store'])->name('iar.store');
+        Route::get('/iar/{iar}', [IarController::class, 'show'])->name('iar.show');
+        Route::patch('/iar/{iar}/accept', [IarController::class, 'accept'])->name('iar.accept');
+        Route::patch('/iar/{iar}/reject', [IarController::class, 'reject'])->name('iar.reject');
+
+        // Attachments
+        Route::post('/attachments', [AttachmentController::class, 'store'])->name('attachments.store');
+        Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
     });
 
     // ── Accounting + Admin: settle ────────────────────────────────────────

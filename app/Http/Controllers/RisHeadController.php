@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
 use App\Models\RisRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,13 @@ class RisHeadController extends Controller
             'head_approved_at'     => now(),
         ]);
 
+        // Notify requester
+        Notification::notify($ris->requested_by_id, 'ris_approved',
+            'RIS Approved',
+            "{$ris->ris_number} was approved by the department head and sent to Supply.",
+            ['url' => route('ris.show', $ris)]
+        );
+
         return redirect()->route('ris.head.index')
             ->with('success', "{$ris->ris_number} approved and sent to Supply.");
     }
@@ -57,6 +65,12 @@ class RisHeadController extends Controller
             'status' => 'rejected',
             'notes'  => $request->notes,
         ]);
+
+        Notification::notify($ris->requested_by_id, 'ris_rejected',
+            'RIS Rejected',
+            "{$ris->ris_number} was rejected: {$request->notes}",
+            ['url' => route('ris.show', $ris)]
+        );
 
         return redirect()->route('ris.head.index')
             ->with('success', "{$ris->ris_number} rejected.");
