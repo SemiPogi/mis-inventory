@@ -24,13 +24,23 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
 
-    // ── Staff + Admin: create/acknowledge vouchers ─────────────────────────
-    // IMPORTANT: must be declared BEFORE the all-roles group so that
-    // /petty-cash/create is matched before /petty-cash/{pettyCash}.
+    // ── Staff + Admin: /create routes MUST come before the all-roles group ───
+    // IMPORTANT: parameterized routes like /{ris} and /{transfer} are declared
+    // in the all-roles group below. Any /create GET must be declared here first
+    // so Laravel doesn't swallow "create" as a model ID.
     Route::middleware('role:admin,staff')->group(function () {
         Route::get('/petty-cash/create', [PettyCashController::class, 'create'])->name('petty-cash.create');
         Route::post('/petty-cash', [PettyCashController::class, 'store'])->name('petty-cash.store');
         Route::patch('/petty-cash/{pettyCash}/acknowledge', [PettyCashController::class, 'acknowledge'])->name('petty-cash.acknowledge');
+
+        // RIS create — must be before /ris/{ris}
+        Route::get('/ris/create', [RisController::class, 'create'])->name('ris.create');
+
+        // Transfer create — must be before /transfers/{transfer}
+        Route::get('/transfers/create', [TransferController::class, 'create'])->name('transfers.create');
+
+        // Assembly create — must be before /assemblies/{assembly}
+        Route::get('/assemblies/create', [AssemblyController::class, 'create'])->name('assemblies.create');
     });
 
     // ── Available to ALL roles ──────────────────────────────────────────────
@@ -62,6 +72,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports/petty-cash/{type}', [ReportController::class, 'pettyCash'])->name('reports.petty-cash');
 
         // RIS — read-only for accounting; full access handled per-controller
+        // IMPORTANT: /ris/create must stay in the staff group below, but index/show/print are open to all
         Route::get('/ris', [RisController::class, 'index'])->name('ris.index');
         Route::get('/ris/{ris}', [RisController::class, 'show'])->name('ris.show');
         Route::get('/ris/{ris}/print', [RisController::class, 'print'])->name('ris.print');
@@ -83,7 +94,8 @@ Route::middleware(['auth'])->group(function () {
 
     // ── RIS — staff + admin (create / mutate) ─────────────────────────────
     Route::middleware('role:admin,staff')->group(function () {
-        Route::get('/ris/create', [RisController::class, 'create'])->name('ris.create');
+        // NOTE: /ris/create, /transfers/create, /assemblies/create are declared
+        // at the top of the file to prevent route collision with /{model} params.
         Route::post('/ris', [RisController::class, 'store'])->name('ris.store');
         Route::patch('/ris/{ris}/acknowledge', [RisController::class, 'acknowledge'])->name('ris.acknowledge');
 
@@ -97,16 +109,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ris/{ris}/supply-review', [RisSupplyController::class, 'review'])->name('ris.supply.review');
         Route::patch('/ris/{ris}/supply-issue', [RisSupplyController::class, 'issue'])->name('ris.supply.issue');
 
-        // Transfers — create/mutate (head enforcement in controller)
-        Route::get('/transfers/create', [TransferController::class, 'create'])->name('transfers.create');
+        // Transfers — mutate (head enforcement in controller)
         Route::post('/transfers', [TransferController::class, 'store'])->name('transfers.store');
         Route::get('/transfers-head', [TransferController::class, 'headQueue'])->name('transfers.head.index');
         Route::patch('/transfers/{transfer}/approve', [TransferController::class, 'approve'])->name('transfers.approve');
         Route::patch('/transfers/{transfer}/reject', [TransferController::class, 'reject'])->name('transfers.reject');
         Route::patch('/transfers/{transfer}/acknowledge', [TransferController::class, 'acknowledge'])->name('transfers.acknowledge');
 
-        // Assemblies — create
-        Route::get('/assemblies/create', [AssemblyController::class, 'create'])->name('assemblies.create');
+        // Assemblies — store
         Route::post('/assemblies', [AssemblyController::class, 'store'])->name('assemblies.store');
 
         // IAR — supply only (controller enforces)
