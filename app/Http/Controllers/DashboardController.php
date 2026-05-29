@@ -86,6 +86,13 @@ class DashboardController extends Controller
             ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->latest()->limit(5)->get();
 
+        $expiringItems = Item::whereNotNull('expiry_date')
+            ->where('expiry_date', '<=', Carbon::today()->addDays(30))
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->orderBy('expiry_date')
+            ->limit(8)
+            ->get();
+
         return view('dashboard', compact(
             'totalInStock',
             'totalReleased',
@@ -100,6 +107,7 @@ class DashboardController extends Controller
             'pcPendingAck',
             'pcPendingSettle',
             'recentVouchers',
+            'expiringItems',
         ));
     }
 }

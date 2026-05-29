@@ -31,6 +31,38 @@
         </x-bento-card>
     </div>
 
+    {{-- Expiry Alert --}}
+    @if($expiringItems->isNotEmpty())
+    <x-bento-card :padded="false" class="mb-4">
+        <div class="px-6 py-4 border-b border-surface-border flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <x-heroicon-o-exclamation-triangle class="w-4 h-4 text-amber-500"/>
+                <h2 class="text-sm font-semibold text-ink-heading">Expiry Alerts</h2>
+            </div>
+            <a href="{{ route('items.index') }}" class="text-xs font-medium text-primary-600 hover:text-primary-700">View all items</a>
+        </div>
+        <x-table :headers="['Item', 'Category', 'Stock', 'Expiry Date', 'Status']">
+            @foreach($expiringItems as $ei)
+                <x-table.row>
+                    <td class="px-6 py-3 font-medium text-ink-heading">
+                        <a href="{{ route('items.show', $ei) }}" class="hover:text-primary-600">{{ $ei->name }}</a>
+                    </td>
+                    <td class="px-6 py-3 text-sm text-ink-muted">{{ $ei->category ?? '—' }}</td>
+                    <td class="px-6 py-3 text-sm text-ink-body">{{ $ei->current_qty }} {{ $ei->unit }}</td>
+                    <td class="px-6 py-3 text-sm text-ink-body">{{ $ei->expiry_date->format('M d, Y') }}</td>
+                    <td class="px-6 py-3">
+                        @if($ei->expiryStatus() === 'expired')
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">Expired</span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Expires {{ $ei->expiry_date->diffForHumans() }}</span>
+                        @endif
+                    </td>
+                </x-table.row>
+            @endforeach
+        </x-table>
+    </x-bento-card>
+    @endif
+
     {{-- Row 3: Petty Cash tiles --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <x-stat-tile label="Petty Cash This Month" :value="'₱' . number_format($pcThisMonth, 2)" icon="banknotes" color="amber" />

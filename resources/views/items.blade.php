@@ -50,11 +50,18 @@
                                 {{ $item->brand ?? '—' }}{{ $item->category ? ' • '.$item->category : '' }}
                             </p>
                         </div>
-                        @if($item->current_qty > 0)
-                            <span class="bg-emerald-50 text-emerald-700 text-xs font-medium px-2.5 py-1 rounded-full shrink-0">In stock</span>
-                        @else
-                            <span class="bg-rose-50 text-rose-700 text-xs font-medium px-2.5 py-1 rounded-full shrink-0">Out</span>
-                        @endif
+                        <div class="flex flex-col items-end gap-1 shrink-0">
+                            @if($item->current_qty > 0)
+                                <span class="bg-emerald-50 text-emerald-700 text-xs font-medium px-2.5 py-1 rounded-full">In stock</span>
+                            @else
+                                <span class="bg-rose-50 text-rose-700 text-xs font-medium px-2.5 py-1 rounded-full">Out</span>
+                            @endif
+                            @if($item->expiryStatus() === 'expired')
+                                <span class="bg-rose-100 text-rose-700 text-xs font-medium px-2 py-0.5 rounded-full">Expired</span>
+                            @elseif($item->expiryStatus() === 'soon')
+                                <span class="bg-amber-100 text-amber-700 text-xs font-medium px-2 py-0.5 rounded-full">Expires soon</span>
+                            @endif
+                        </div>
                     </div>
                     <div class="mt-4 flex items-end justify-between">
                         <div>

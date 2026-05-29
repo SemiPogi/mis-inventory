@@ -55,7 +55,7 @@ class Item extends Model
     {
         return $this->expiry_date !== null
             && ! $this->expiry_date->isPast()
-            && $this->expiry_date->diffInDays(now()) <= 30;
+            && $this->expiry_date->lte(now()->addDays(30));
     }
 
     public function isBelowMinStock(): bool

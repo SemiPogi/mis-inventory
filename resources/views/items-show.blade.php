@@ -35,6 +35,33 @@
         </x-bento-card>
     </div>
 
+    @if($item->expiry_date)
+    <div class="mb-4">
+        <x-bento-card>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-ink-muted uppercase tracking-wide mb-1">Expiry Date</p>
+                    <p class="text-lg font-semibold text-ink-heading">{{ $item->expiry_date->format('M d, Y') }}</p>
+                    <p class="text-xs text-ink-muted mt-0.5">
+                        @if($item->isExpired())
+                            Expired {{ $item->expiry_date->diffForHumans() }}
+                        @else
+                            Expires {{ $item->expiry_date->diffForHumans() }}
+                        @endif
+                    </p>
+                </div>
+                @if($item->expiryStatus() === 'expired')
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-rose-100 text-rose-700">Expired</span>
+                @elseif($item->expiryStatus() === 'soon')
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-700">Expiring soon</span>
+                @else
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700">Valid</span>
+                @endif
+            </div>
+        </x-bento-card>
+    </div>
+    @endif
+
     <x-bento-card variant="hero" class="mb-4">
         <p class="text-xs uppercase tracking-wide opacity-80 font-medium">30-day movement</p>
         <div class="mt-3 h-20">

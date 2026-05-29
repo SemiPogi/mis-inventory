@@ -40,6 +40,10 @@
                     <x-label for="qty" required>Quantity</x-label>
                     <x-input id="qty" name="qty" type="number" min="1" :value="old('qty')" required/>
                 </div>
+                <div>
+                    <x-label for="expiry_date">Expiry Date</x-label>
+                    <x-input id="expiry_date" name="expiry_date" type="date" :value="old('expiry_date')"/>
+                </div>
             </div>
 
             <p class="text-sm font-semibold text-ink-heading mb-4">Source &amp; Reference</p>
