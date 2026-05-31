@@ -21,8 +21,15 @@ class DashboardController extends Controller
             ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->count();
 
+        // Only count head-approved (or legacy null) releases in ack stats
+        $approvedReleaseFilter = fn($q) => $q->where(
+            fn($q2) => $q2->whereNull('head_approval_status')
+                          ->orWhere('head_approval_status', 'approved')
+        );
+
         $pendingAck = Transaction::where('type', 'released')
             ->where('acknowledgment_status', 'pending')
+            ->tap($approvedReleaseFilter)
             ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->count();
 
@@ -33,10 +40,33 @@ class DashboardController extends Controller
 
         $pendingTransactions = Transaction::where('type', 'released')
             ->where('acknowledgment_status', 'pending')
+            ->tap($approvedReleaseFilter)
             ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->latest()
             ->limit(8)
             ->get();
+
+        // Attention counts — drive the "needs action" banners
+        $user = auth()->user();
+
+        // Heads / Admins: how many submissions are waiting for their approval
+        $pendingApprovalCount = 0;
+        if ($user->is_head || $user->isAdmin()) {
+            $pendingApprovalCount = Transaction::where('head_approval_status', 'pending')
+                ->when(! $user->isAdmin(), fn($q) => $q->where('department_id', $user->department_id))
+                ->count();
+        }
+
+        // Staff: how many of their own submissions are still pending
+        $myPendingCount = 0;
+        if (! $user->isAdmin() && ! $user->is_head) {
+            $myPendingCount = Transaction::where('head_approval_status', 'pending')
+                ->where(fn($q) => $q
+                    ->where('received_by_user_id', $user->id)
+                    ->orWhere('released_by_user_id', $user->id)
+                )
+                ->count();
+        }
 
         $weeklyActivity = collect(range(6, 0))->map(function ($daysAgo) use ($scope) {
             $date = Carbon::today()->subDays($daysAgo);
@@ -108,6 +138,8 @@ class DashboardController extends Controller
             'pcPendingSettle',
             'recentVouchers',
             'expiringItems',
+            'pendingApprovalCount',
+            'myPendingCount',
         ));
     }
 }

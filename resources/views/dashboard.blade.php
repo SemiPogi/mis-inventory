@@ -1,6 +1,57 @@
 <x-app-layout>
     <x-page-header title="Dashboard" subtitle="MIS Office Inventory Overview"/>
 
+    {{-- ── Attention banners ─────────────────────────────────── --}}
+    @if($pendingApprovalCount > 0 || $myPendingCount > 0)
+        <div class="flex flex-col gap-3 mb-5">
+
+            {{-- Head / Admin: pending approvals action --}}
+            @if($pendingApprovalCount > 0)
+                <div class="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
+                    <div class="flex items-start gap-3">
+                        <x-heroicon-o-clock class="w-6 h-6 mt-0.5 shrink-0 text-amber-500"/>
+                        <div>
+                            <p class="text-sm font-semibold text-amber-900">
+                                {{ $pendingApprovalCount }} {{ Str::plural('submission', $pendingApprovalCount) }} waiting for your approval
+                            </p>
+                            <p class="text-xs text-amber-700 mt-0.5">
+                                Staff have submitted receive or release requests that need your review before inventory is updated.
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ route('approvals.index') }}"
+                       class="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold px-4 py-2 transition">
+                        <x-heroicon-o-clipboard-document-check class="w-4 h-4"/>
+                        Review Now
+                    </a>
+                </div>
+            @endif
+
+            {{-- Staff: own pending submissions --}}
+            @if($myPendingCount > 0)
+                <div class="flex items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50 px-5 py-4">
+                    <div class="flex items-start gap-3">
+                        <x-heroicon-o-arrow-path class="w-6 h-6 mt-0.5 shrink-0 text-blue-500"/>
+                        <div>
+                            <p class="text-sm font-semibold text-blue-900">
+                                {{ $myPendingCount }} of your {{ Str::plural('submission', $myPendingCount) }} {{ $myPendingCount === 1 ? 'is' : 'are' }} pending head approval
+                            </p>
+                            <p class="text-xs text-blue-700 mt-0.5">
+                                Inventory will be updated once your department head reviews and approves.
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ route('transactions.index') }}"
+                       class="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold px-4 py-2 transition">
+                        <x-heroicon-o-eye class="w-4 h-4"/>
+                        View Status
+                    </a>
+                </div>
+            @endif
+
+        </div>
+    @endif
+
     {{-- Row 1: Stat tiles --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4"
          x-data x-init="$stagger($el)" data-anim="stagger">
