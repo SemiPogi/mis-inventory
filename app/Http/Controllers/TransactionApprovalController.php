@@ -61,8 +61,12 @@ class TransactionApprovalController extends Controller
 
         $transaction->update($updates);
 
+        $successMsg = $transaction->type === 'received'
+            ? "Approved — {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" added to inventory."
+            : "Approved — {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" deducted from inventory. Awaiting acknowledgment.";
+
         return redirect()->route('approvals.index')
-            ->with('success', 'Transaction approved.');
+            ->with('success', $successMsg);
     }
 
     public function reject(Request $request, Transaction $transaction): RedirectResponse

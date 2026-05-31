@@ -72,7 +72,8 @@ class ReceiveController extends Controller
                 'head_approved_at'      => now(),
             ]);
 
-            return redirect()->route('dashboard')->with('success', 'Item received successfully!');
+            return redirect()->route('dashboard')
+                ->with('success', "{$request->qty} {$item->unit} of \"{$item->name}\" received and added to inventory.");
         }
 
         // Staff: create item with qty=0 if not yet in inventory (captures metadata),

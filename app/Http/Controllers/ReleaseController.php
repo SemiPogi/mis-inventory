@@ -69,7 +69,7 @@ class ReleaseController extends Controller
             ]);
 
             return redirect()->route('acknowledge.index')
-                ->with('success', 'Item released! Awaiting acknowledgment.');
+                ->with('success', "{$request->qty} {$item->unit} of \"{$item->name}\" released and deducted from inventory. Awaiting acknowledgment.");
         }
 
         // Staff: do NOT decrement — leave for head to approve
