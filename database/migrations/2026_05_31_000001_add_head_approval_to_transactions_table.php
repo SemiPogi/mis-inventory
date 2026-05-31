@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('transactions', function (Blueprint $table) {
-            $table->enum('head_approval_status', ['pending', 'approved', 'rejected'])
+            $table->enum('head_approval_status', ['pending', 'approved', 'rejected', 'cancelled'])
                   ->nullable()
                   ->after('department_id');
 

@@ -82,4 +82,10 @@ class Transaction extends Model
     {
         return $this->head_approval_status === 'rejected';
     }
+
+    /** True when the original submitter cancelled this pending submission. */
+    public function isCancelled(): bool
+    {
+        return $this->head_approval_status === 'cancelled';
+    }
 }
