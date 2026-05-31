@@ -34,7 +34,7 @@ class TransactionCancelController extends Controller
                     ->where('id', '!=', $transaction->id)
                     ->where(fn($q) => $q
                         ->whereNull('head_approval_status')
-                        ->orWhere('head_approval_status', '!=', 'cancelled')
+                        ->orWhereNotIn('head_approval_status', ['cancelled', 'rejected'])
                     )
                     ->count();
 
