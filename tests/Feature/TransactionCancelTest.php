@@ -168,4 +168,67 @@ class TransactionCancelTest extends TestCase
 
         $this->assertDatabaseHas('items', ['id' => $item->id]);
     }
+
+    // ── resubmit() tests ────────────────────────────────────────────────────
+
+    public function test_resubmit_rejected_receive_redirects_to_receive_with_query_params(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $item  = $this->makeItem();
+        $tx    = $this->makeReceive($item, $staff, [
+            'head_approval_status' => 'rejected',
+            'received_from'        => 'S&P Office',
+            'ris_iar_number'       => 'RIS-2026-001',
+            'remarks'              => 'Please re-check',
+        ]);
+
+        $response = $this->actingAs($staff)
+            ->get(route('transactions.resubmit', $tx));
+
+        $response->assertRedirect();
+        $location = urldecode($response->headers->get('Location'));
+        $this->assertStringContainsString('name=Test Item', $location);
+        $this->assertStringContainsString('ris_iar_number=RIS-2026-001', $location);
+    }
+
+    public function test_resubmit_rejected_release_redirects_to_release_with_query_params(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $item  = $this->makeItem(['current_qty' => 5]);
+        $tx    = $this->makeRelease($item, $staff, [
+            'head_approval_status' => 'rejected',
+        ]);
+
+        $response = $this->actingAs($staff)
+            ->get(route('transactions.resubmit', $tx));
+
+        $response->assertRedirect();
+        $location = urldecode($response->headers->get('Location'));
+        $this->assertStringContainsString('released_to_office=Radiology', $location);
+        $this->assertStringContainsString('receiver_name=Dr. Reyes', $location);
+    }
+
+    public function test_cannot_resubmit_a_pending_transaction(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $item  = $this->makeItem();
+        $tx    = $this->makeReceive($item, $staff, ['head_approval_status' => 'pending']);
+
+        $this->actingAs($staff)
+            ->get(route('transactions.resubmit', $tx))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+    }
+
+    public function test_cannot_resubmit_another_users_rejected_transaction(): void
+    {
+        $staffA = User::factory()->create(['role' => 'staff']);
+        $staffB = User::factory()->create(['role' => 'staff']);
+        $item   = $this->makeItem();
+        $tx     = $this->makeReceive($item, $staffA, ['head_approval_status' => 'rejected']);
+
+        $this->actingAs($staffB)
+            ->get(route('transactions.resubmit', $tx))
+            ->assertForbidden();
+    }
 }
