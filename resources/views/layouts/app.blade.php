@@ -58,6 +58,14 @@
         $transferHeadBadge = \App\Models\DepartmentTransfer::where('status', 'pending_head')->count();
     }
 
+    // Transaction approval badge (receive + release pending)
+    $approvalBadge = 0;
+    if ($user->is_head || $user->isAdmin()) {
+        $approvalBadge = \App\Models\Transaction::where('head_approval_status', 'pending')
+            ->when(! $user->isAdmin(), fn($q) => $q->where('department_id', $user->department_id))
+            ->count();
+    }
+
     // Unread notifications count
     $notifCount = \App\Models\Notification::where('user_id', $user->id)->whereNull('read_at')->count();
 
@@ -214,6 +222,27 @@
                         @endif
                     </span>
                     <span x-show="!collapsed" x-transition.opacity>Transfer Approvals</span>
+                </a>
+            @endif
+
+            {{-- ── Receive / Release Approvals (dept heads + admin) ── --}}
+            @if($user->is_head || $user->isAdmin())
+                @php $approvalsActive = request()->routeIs('approvals.*'); @endphp
+                <a href="{{ route('approvals.index') }}"
+                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                          {{ $approvalsActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
+                    @if($approvalsActive)
+                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
+                    @endif
+                    <span class="relative shrink-0">
+                        <x-heroicon-o-clipboard-document-check class="w-5 h-5"/>
+                        @if($approvalBadge > 0)
+                            <span class="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                {{ $approvalBadge > 9 ? '9+' : $approvalBadge }}
+                            </span>
+                        @endif
+                    </span>
+                    <span x-show="!collapsed" x-transition.opacity>Approvals</span>
                 </a>
             @endif
 
