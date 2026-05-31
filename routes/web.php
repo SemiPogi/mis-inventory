@@ -17,6 +17,7 @@ use App\Http\Controllers\RisSupplyController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\AssemblyController;
 use App\Http\Controllers\IarController;
+use App\Http\Controllers\TransactionApprovalController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ItemCategoryController;
@@ -130,6 +131,11 @@ Route::middleware(['auth'])->group(function () {
         // Attachments
         Route::post('/attachments', [AttachmentController::class, 'store'])->name('attachments.store');
         Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
+
+        // Transaction approvals (dept heads + admin — controller enforces)
+        Route::get('/approvals', [TransactionApprovalController::class, 'index'])->name('approvals.index');
+        Route::patch('/approvals/{transaction}/approve', [TransactionApprovalController::class, 'approve'])->name('approvals.approve');
+        Route::patch('/approvals/{transaction}/reject', [TransactionApprovalController::class, 'reject'])->name('approvals.reject');
     });
 
     // ── Accounting + Admin: settle ────────────────────────────────────────
