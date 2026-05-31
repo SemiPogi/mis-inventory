@@ -158,8 +158,9 @@ class RisController extends Controller
 
     public function print(RisRequest $ris): View
     {
-        if (! $ris->isCompleted()) {
-            abort(403, 'RIS must be completed before printing.');
+        $scope = $this->deptScope();
+        if ($scope && $ris->requesting_dept_id !== $scope) {
+            abort(403);
         }
         $ris->load(['requestingDept', 'requestedBy', 'headApprovedBy', 'issuedBy', 'acknowledgedBy', 'items']);
         return view('ris.print', compact('ris'));

@@ -2,11 +2,9 @@
     <x-page-header :title="$ris->ris_number" :subtitle="'Status: ' . $ris->statusLabel()">
         <x-slot name="actions">
             <x-button href="{{ route('ris.index') }}" variant="ghost">← Back</x-button>
-            @if($ris->isCompleted())
-                <x-button href="{{ route('ris.print', $ris) }}" variant="ghost" target="_blank">
-                    <x-heroicon-o-printer class="w-4 h-4"/> Print
-                </x-button>
-            @endif
+            <x-button href="{{ route('ris.print', $ris) }}" variant="ghost" target="_blank">
+                <x-heroicon-o-printer class="w-4 h-4"/> Print
+            </x-button>
         </x-slot>
     </x-page-header>
 

@@ -85,15 +85,27 @@
         @if($acknowledged->isEmpty())
             <x-empty-state icon="document-text" title="No history yet" hint="Acknowledged transactions will appear here."/>
         @else
-            <x-table :headers="['Item', 'Qty', 'Released To', 'Office', 'Acknowledged By', 'Date', 'Remarks']">
+            <x-table :headers="['Type', 'Item', 'Qty', 'Source / Recipient', 'RIS / Ref No.', 'Acknowledged By', 'Date', 'Remarks']">
                 @foreach($acknowledged as $tx)
                     <x-table.row>
+                        <td class="px-6 py-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                {{ $tx->type === 'received' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700' }}">
+                                {{ $tx->type === 'received' ? 'Received (RIS)' : 'Released' }}
+                            </span>
+                        </td>
                         <td class="px-6 py-3 font-medium text-ink-heading">{{ $tx->item_name_snapshot }}</td>
                         <td class="px-6 py-3 text-ink-body">{{ $tx->qty }} {{ $tx->unit }}</td>
-                        <td class="px-6 py-3 text-ink-body">{{ $tx->receiver_name }}</td>
-                        <td class="px-6 py-3 text-ink-body">{{ $tx->released_to_office }}</td>
-                        <td class="px-6 py-3 text-ink-body">{{ $tx->acknowledged_by_name }}</td>
-                        <td class="px-6 py-3 text-ink-body">{{ $tx->acknowledged_date }}</td>
+                        <td class="px-6 py-3 text-ink-body">
+                            @if($tx->type === 'received')
+                                {{ $tx->received_from ?? 'Supply (RIS)' }}
+                            @else
+                                {{ $tx->receiver_name }}{{ $tx->released_to_office ? ' — '.$tx->released_to_office : '' }}
+                            @endif
+                        </td>
+                        <td class="px-6 py-3 text-ink-muted font-mono text-xs">{{ $tx->ris_iar_number ?? '—' }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->acknowledged_by_name ?? '—' }}</td>
+                        <td class="px-6 py-3 text-ink-body">{{ $tx->acknowledged_date ?? '—' }}</td>
                         <td class="px-6 py-3 text-ink-muted">{{ $tx->acknowledgment_remarks ?? '—' }}</td>
                     </x-table.row>
                 @endforeach
@@ -131,7 +143,13 @@
                     this.submitting = false;
 
                     if (!res.ok) {
-                        alert('Could not record acknowledgment. Please try again.');
+                        let msg = 'Could not record acknowledgment. Please try again.';
+                        try {
+                            const data = await res.json();
+                            if (data.message) msg = data.message;
+                            if (data.errors) msg = Object.values(data.errors).flat().join('\n');
+                        } catch (_) {}
+                        alert(msg);
                         return;
                     }
 

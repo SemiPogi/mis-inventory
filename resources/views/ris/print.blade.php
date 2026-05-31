@@ -9,362 +9,334 @@
 
         body {
             font-family: Arial, sans-serif;
-            font-size: 10pt;
+            font-size: 9pt;
             color: #000;
             background: #fff;
-            padding: 18mm 18mm 18mm 25mm; /* standard gov't paper margins */
         }
 
-        /* ── Header ────────────────────────────────────────────────── */
-        .doc-header {
+        /* ── Page wrapper ── */
+        .page {
+            width: 8.5in;
+            min-height: 11in;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Letterhead header / footer ── */
+        .letterhead-header img,
+        .letterhead-footer img {
+            width: 100%;
+            display: block;
+        }
+
+        /* ── Form body (grows to fill space between header & footer) ── */
+        .form-body {
+            flex: 1;
+            padding: 0 0.5in;
+        }
+
+        /* ── Document title ── */
+        .doc-title {
             text-align: center;
-            margin-bottom: 6px;
+            padding: 4px 0 3px;
         }
-        .doc-header .entity {
-            font-size: 9pt;
-            text-transform: uppercase;
-        }
-        .doc-header .form-title {
-            font-size: 13pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 3px 0 1px;
-        }
-        .doc-header .form-code {
-            font-size: 8pt;
-            color: #555;
-        }
+        .doc-title .sub  { font-size: 8.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .doc-title .main { font-size: 12pt;  font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* ── Meta row (RIS # + Fund Cluster) ───────────────────────── */
-        .meta-row {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 6px;
-            margin-bottom: 4px;
-            gap: 24px;
-        }
-        .meta-field {
-            display: flex;
-            align-items: baseline;
-            gap: 6px;
-            font-size: 9pt;
-        }
-        .meta-field .label { font-weight: bold; white-space: nowrap; }
-        .meta-field .value {
-            border-bottom: 1px solid #000;
-            min-width: 120px;
-            padding: 0 4px 1px;
-        }
-
-        /* ── Info block (Dept, Purpose, Date) ───────────────────────── */
-        .info-block {
-            border: 1px solid #000;
-            margin-bottom: 0;
-        }
-        .info-block table {
+        /* ── Info block ── */
+        .info-table {
             width: 100%;
             border-collapse: collapse;
+            border: 1px solid #000;
+            margin-top: 4px;
         }
-        .info-block td {
-            padding: 4px 6px;
-            font-size: 9pt;
+        .info-table td {
+            padding: 3px 6px;
             border-right: 1px solid #000;
+            font-size: 8.5pt;
             vertical-align: top;
         }
-        .info-block td:last-child { border-right: none; }
-        .info-block .field-label {
-            font-size: 7.5pt;
-            color: #444;
+        .info-table td:last-child { border-right: none; }
+        .lbl {
+            font-size: 7pt;
             display: block;
-            margin-bottom: 2px;
-        }
-        .info-block .field-value {
-            font-weight: bold;
-            font-size: 9.5pt;
+            margin-bottom: 7px;
         }
 
-        /* ── Items table ────────────────────────────────────────────── */
+        /* ── Items table ── */
         .items-table {
             width: 100%;
             border-collapse: collapse;
             border: 1px solid #000;
             border-top: none;
-            margin-bottom: 0;
+            margin-top: 6px;
         }
         .items-table th {
-            background: #f0f0f0;
+            border: 1px solid #000;
+            padding: 3px 4px;
             font-size: 8pt;
             font-weight: bold;
             text-align: center;
-            padding: 4px 6px;
-            border: 1px solid #000;
             text-transform: uppercase;
+            background: #f5f5f5;
         }
         .items-table td {
-            font-size: 9pt;
-            padding: 4px 6px;
             border: 1px solid #000;
+            padding: 1px 4px;
+            font-size: 8.5pt;
+            height: 16px;
             vertical-align: middle;
         }
-        .items-table td.center { text-align: center; }
-        .items-table .empty-row td { height: 18px; }
+        .items-table td.c { text-align: center; }
 
-        /* ── Signature block ────────────────────────────────────────── */
-        .sig-section {
+        /* ── Purpose ── */
+        .purpose-row {
+            border: 1px solid #000;
+            border-top: none;
+            padding: 3px 6px;
+            font-size: 8.5pt;
+            min-height: 26px;
+        }
+
+        /* ── Signature block ── */
+        .sig-table {
+            width: 100%;
+            border-collapse: collapse;
             border: 1px solid #000;
             border-top: none;
         }
-        .sig-section table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .sig-section td {
-            padding: 8px 10px 4px;
+        .sig-table td {
             border-right: 1px solid #000;
+            padding: 4px 6px 3px;
             vertical-align: top;
             width: 25%;
-        }
-        .sig-section td:last-child { border-right: none; }
-        .sig-label {
-            font-size: 7.5pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 24px; /* space for signature */
-            display: block;
-        }
-        .sig-line {
-            border-top: 1px solid #000;
-            margin-top: 2px;
-            padding-top: 2px;
-        }
-        .sig-name {
-            font-size: 9pt;
-            font-weight: bold;
-            text-align: center;
-        }
-        .sig-position {
-            font-size: 8pt;
-            text-align: center;
-            color: #333;
-        }
-        .sig-date-line {
-            margin-top: 4px;
             font-size: 8pt;
         }
-        .sig-date-line .date-label {
-            font-size: 7.5pt;
-            color: #555;
-            display: block;
-        }
-        .sig-date-line .date-value {
-            border-bottom: 1px solid #000;
-            display: inline-block;
-            min-width: 100px;
-            padding: 0 3px 1px;
-        }
+        .sig-table td:last-child { border-right: none; }
+        .sig-role  { font-size: 7.5pt; font-weight: bold; display: block; margin-bottom: 2px; }
+        .sig-space { height: 28px; display: block; }
+        .sig-line  { border-top: 1px solid #000; margin-top: 2px; }
+        .sig-name  { font-size: 8.5pt; font-weight: bold; text-align: center; padding-top: 1px; }
+        .sig-desig { font-size: 7pt; text-align: center; color: #333; }
+        .sig-date  { font-size: 7.5pt; margin-top: 3px; }
 
-        /* ── Footer ─────────────────────────────────────────────────── */
-        .doc-footer {
-            margin-top: 6px;
+        /* ── Form code line ── */
+        .form-code {
+            margin-top: 4px;
+            margin-bottom: 2px;
             font-size: 7.5pt;
-            color: #666;
             display: flex;
             justify-content: space-between;
+            padding: 0 0;
+        }
+
+        /* ── Screen controls ── */
+        .no-print {
+            display: flex;
+            gap: 10px;
+            padding: 10px 16px;
+            background: #f3f4f6;
+            border-bottom: 1px solid #d1d5db;
+        }
+        .btn-print {
+            padding: 7px 20px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11pt;
+            font-weight: 600;
+        }
+        .btn-back {
+            padding: 7px 16px;
+            background: #fff;
+            color: #111;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11pt;
         }
 
         @media print {
-            body { padding: 0; }
             .no-print { display: none !important; }
-            @page { size: legal portrait; margin: 18mm 18mm 18mm 25mm; }
+            body { background: #fff; }
+            .page { width: 100%; min-height: 100vh; }
+            @page { size: letter portrait; margin: 0; }
         }
     </style>
 </head>
 <body>
 
-    {{-- Print / Back buttons (hidden on print) --}}
-    <div class="no-print" style="margin-bottom:12px; display:flex; gap:10px;">
-        <button onclick="window.print()"
-                style="padding:6px 16px; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:11pt;">
-            🖨 Print
-        </button>
-        <button onclick="history.back()"
-                style="padding:6px 16px; background:#f3f4f6; color:#111; border:1px solid #d1d5db; border-radius:6px; cursor:pointer; font-size:11pt;">
-            ← Back
-        </button>
+    {{-- Screen-only controls --}}
+    <div class="no-print">
+        <button class="btn-print" onclick="window.print()">🖨 Print / Save PDF</button>
+        <button class="btn-back"  onclick="history.back()">← Back</button>
     </div>
 
-    {{-- ── Document Header ── --}}
-    <div class="doc-header">
-        <div class="entity">Republic of the Philippines</div>
-        <div class="entity" style="font-weight:bold;">La Union Medical Center</div>
-        <div class="form-title">Requisition and Issue Slip</div>
-        <div class="form-code">PAS-007-95 &nbsp;|&nbsp; Appendix 63</div>
-    </div>
+    <div class="page">
 
-    {{-- ── RIS # / Fund Cluster ── --}}
-    <div class="meta-row">
-        <div class="meta-field">
-            <span class="label">RIS No.:</span>
-            <span class="value">{{ $ris->ris_number }}</span>
+        {{-- ── Official LUMC Letterhead Header ── --}}
+        <div class="letterhead-header">
+            <img src="{{ asset('images/Header.svg') }}" alt="La Union Medical Center"/>
         </div>
-        <div class="meta-field">
-            <span class="label">Fund Cluster:</span>
-            <span class="value">&nbsp;</span>
-        </div>
-    </div>
 
-    {{-- ── Department / Purpose / Date ── --}}
-    <div class="info-block">
-        <table>
-            <tr>
-                <td style="width:40%">
-                    <span class="field-label">Division/Department</span>
-                    <span class="field-value">{{ $ris->requestingDept->name }}</span>
-                </td>
-                <td style="width:35%">
-                    <span class="field-label">Responsibility Center Code</span>
-                    <span class="field-value">{{ $ris->requestingDept->responsibility_center_code ?? '&nbsp;' }}</span>
-                </td>
-                <td style="width:25%">
-                    <span class="field-label">Date</span>
-                    <span class="field-value">{{ $ris->created_at->format('M d, Y') }}</span>
-                </td>
-            </tr>
-            <tr>
-                <td colspan="3" style="border-top:1px solid #000;">
-                    <span class="field-label">Purpose / Justification</span>
-                    <span class="field-value">{{ $ris->purpose }}</span>
-                </td>
-            </tr>
-        </table>
-    </div>
+        {{-- ── Form Body ── --}}
+        <div class="form-body">
 
-    {{-- ── Items Table ── --}}
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th style="width:6%">Stock No.</th>
-                <th style="width:6%">Unit</th>
-                <th style="width:8%">Requested<br>Qty</th>
-                <th style="width:8%">Issued<br>Qty</th>
-                <th style="width:30%">Description</th>
-                <th style="width:10%">Unit Cost</th>
-                <th style="width:12%">Total Cost</th>
-                <th style="width:20%">Remarks</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($ris->items as $item)
+            {{-- Document title --}}
+            <div class="doc-title">
+                <div class="sub">Property and Supply Section</div>
+                <div class="main">Requisition and Issue Slip</div>
+            </div>
+
+            {{-- Info block --}}
+            <table class="info-table">
                 <tr>
-                    <td class="center">{{ $item->stock_no ?? '' }}</td>
-                    <td class="center">{{ $item->unit }}</td>
-                    <td class="center">{{ $item->requested_qty }}</td>
-                    <td class="center">{{ $item->issued_qty ?? '' }}</td>
-                    <td>{{ $item->item_name }}</td>
-                    <td class="center">&nbsp;</td>
-                    <td class="center">&nbsp;</td>
-                    <td>{{ $item->remarks ?? '' }}</td>
+                    <td style="width:30%">
+                        <span class="lbl">Division:</span>
+                        {{ $ris->requestingDept->name }}
+                        <br/><br/>
+                        <span class="lbl" style="margin-top:4px;">Office:</span>
+                        &nbsp;
+                    </td>
+                    <td style="width:28%">
+                        <span class="lbl">Responsibility Center Code:</span>
+                        {{ $ris->requestingDept->responsibility_center_code ?? '' }}
+                    </td>
+                    <td style="width:22%">
+                        <span class="lbl">RIS No.:</span>
+                        <strong>{{ $ris->ris_number }}</strong>
+                        <br/><br/>
+                        <span class="lbl" style="margin-top:4px;">IAR No.:</span>
+                        &nbsp;
+                    </td>
+                    <td style="width:20%">
+                        <span class="lbl">Date:</span>
+                        {{ $ris->created_at->format('M d, Y') }}
+                        <br/><br/>
+                        <span class="lbl" style="margin-top:4px;">Dept:</span>
+                        {{ $ris->requestingDept->name }}
+                    </td>
                 </tr>
-            @endforeach
-            {{-- Pad to minimum 8 rows --}}
-            @for($i = $ris->items->count(); $i < 8; $i++)
-                <tr class="empty-row">
-                    <td>&nbsp;</td><td></td><td></td><td></td>
-                    <td></td><td></td><td></td><td></td>
+            </table>
+
+            {{-- Items table --}}
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width:9%">Stock No.</th>
+                        <th rowspan="2" style="width:7%">Unit</th>
+                        <th rowspan="2" style="width:36%">Description</th>
+                        <th style="width:10%; border-bottom:none;">Requisition</th>
+                        <th style="width:10%;">Issuance</th>
+                        <th rowspan="2" style="width:18%">Remark</th>
+                    </tr>
+                    <tr>
+                        <th>Quantity</th>
+                        <th>Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($ris->items as $item)
+                        <tr>
+                            <td class="c">{{ $item->stock_no ?? '' }}</td>
+                            <td class="c">{{ $item->unit }}</td>
+                            <td>&nbsp;{{ $item->item_name }}</td>
+                            <td class="c">{{ $item->requested_qty }}</td>
+                            <td class="c">{{ $item->issued_qty ?? '' }}</td>
+                            <td>&nbsp;{{ $item->remarks ?? '' }}</td>
+                        </tr>
+                    @endforeach
+                    {{-- Pad to minimum 18 rows --}}
+                    @for($i = $ris->items->count(); $i < 18; $i++)
+                        <tr>
+                            <td>&nbsp;</td><td></td><td></td>
+                            <td></td><td></td><td></td>
+                        </tr>
+                    @endfor
+                </tbody>
+            </table>
+
+            {{-- Purpose --}}
+            <div class="purpose-row">
+                <strong>Purpose:</strong>&nbsp;{{ $ris->purpose }}
+            </div>
+
+            {{-- Signature block --}}
+            <table class="sig-table">
+                <tr>
+                    <td>
+                        <span class="sig-role">Requested by:</span>
+                        <span class="sig-space"></span>
+                        <div class="sig-line">
+                            <div class="sig-name">{{ strtoupper($ris->requestedBy->name) }}</div>
+                            <div class="sig-desig">Requesting Officer</div>
+                        </div>
+                        <div class="sig-date">Date: {{ $ris->created_at->format('M d, Y') }}</div>
+                    </td>
+                    <td>
+                        <span class="sig-role">Approved by:</span>
+                        @if($ris->headApprovedBy)
+                            <span class="sig-space"></span>
+                            <div class="sig-line">
+                                <div class="sig-name">{{ strtoupper($ris->headApprovedBy->name) }}</div>
+                                <div class="sig-desig">Department Head</div>
+                            </div>
+                            <div class="sig-date">Date: {{ $ris->head_approved_at?->format('M d, Y') }}</div>
+                        @else
+                            <span class="sig-space"></span>
+                            <div class="sig-line"></div>
+                            <div class="sig-date">Date: _______________</div>
+                        @endif
+                    </td>
+                    <td>
+                        <span class="sig-role">Issued by:</span>
+                        @if($ris->issuedBy)
+                            <span class="sig-space"></span>
+                            <div class="sig-line">
+                                <div class="sig-name">{{ strtoupper($ris->issuedBy->name) }}</div>
+                                <div class="sig-desig">Supply Officer</div>
+                            </div>
+                            <div class="sig-date">Date: {{ $ris->issued_at?->format('M d, Y') }}</div>
+                        @else
+                            <span class="sig-space"></span>
+                            <div class="sig-line"></div>
+                            <div class="sig-date">Date: _______________</div>
+                        @endif
+                    </td>
+                    <td>
+                        <span class="sig-role">Received by:</span>
+                        @if($ris->acknowledgedBy)
+                            <span class="sig-space"></span>
+                            <div class="sig-line">
+                                <div class="sig-name">{{ strtoupper($ris->acknowledgedBy->name) }}</div>
+                                <div class="sig-desig">Acknowledging Officer</div>
+                            </div>
+                            <div class="sig-date">Date: {{ $ris->acknowledged_at?->format('M d, Y') }}</div>
+                        @else
+                            <span class="sig-space"></span>
+                            <div class="sig-line"></div>
+                            <div class="sig-date">Date: _______________</div>
+                        @endif
+                    </td>
                 </tr>
-            @endfor
-        </tbody>
-    </table>
+            </table>
 
-    {{-- ── Signature Block (4 columns) ── --}}
-    <div class="sig-section">
-        <table>
-            <tr>
-                {{-- 1. Requested by --}}
-                <td>
-                    <span class="sig-label">Requested by:</span>
-                    <div class="sig-line">
-                        <div class="sig-name">{{ strtoupper($ris->requestedBy->name) }}</div>
-                        <div class="sig-position">Requesting Officer</div>
-                    </div>
-                    <div class="sig-date-line">
-                        <span class="date-label">Date:</span>
-                        <span class="date-value">{{ $ris->created_at->format('M d, Y') }}</span>
-                    </div>
-                </td>
+            {{-- Form code --}}
+            <div class="form-code">
+                <span>PAS-007-95 &nbsp;|&nbsp; Appendix 63</span>
+                <span>Status: {{ $ris->statusLabel() }} &nbsp;|&nbsp; Printed: {{ now()->format('M d, Y g:i A') }}</span>
+            </div>
 
-                {{-- 2. Approved by (Dept Head) --}}
-                <td>
-                    <span class="sig-label">Approved by:</span>
-                    @if($ris->headApprovedBy)
-                        <div class="sig-line">
-                            <div class="sig-name">{{ strtoupper($ris->headApprovedBy->name) }}</div>
-                            <div class="sig-position">Department Head</div>
-                        </div>
-                        <div class="sig-date-line">
-                            <span class="date-label">Date:</span>
-                            <span class="date-value">{{ $ris->head_approved_at?->format('M d, Y') }}</span>
-                        </div>
-                    @else
-                        <div class="sig-line" style="margin-top:24px;"></div>
-                        <div class="sig-date-line">
-                            <span class="date-label">Date:</span>
-                            <span class="date-value">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                        </div>
-                    @endif
-                </td>
+        </div>{{-- end .form-body --}}
 
-                {{-- 3. Issued by (Supply) --}}
-                <td>
-                    <span class="sig-label">Issued by:</span>
-                    @if($ris->issuedBy)
-                        <div class="sig-line">
-                            <div class="sig-name">{{ strtoupper($ris->issuedBy->name) }}</div>
-                            <div class="sig-position">Supply Officer</div>
-                        </div>
-                        <div class="sig-date-line">
-                            <span class="date-label">Date:</span>
-                            <span class="date-value">{{ $ris->issued_at?->format('M d, Y') }}</span>
-                        </div>
-                    @else
-                        <div class="sig-line" style="margin-top:24px;"></div>
-                        <div class="sig-date-line">
-                            <span class="date-label">Date:</span>
-                            <span class="date-value">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                        </div>
-                    @endif
-                </td>
+        {{-- ── Official LUMC Letterhead Footer ── --}}
+        <div class="letterhead-footer">
+            <img src="{{ asset('images/Footer.svg') }}" alt="La Union Medical Center Footer"/>
+        </div>
 
-                {{-- 4. Received by (Dept Acknowledger) --}}
-                <td>
-                    <span class="sig-label">Received by:</span>
-                    @if($ris->acknowledgedBy)
-                        <div class="sig-line">
-                            <div class="sig-name">{{ strtoupper($ris->acknowledgedBy->name) }}</div>
-                            <div class="sig-position">Acknowledging Officer</div>
-                        </div>
-                        <div class="sig-date-line">
-                            <span class="date-label">Date:</span>
-                            <span class="date-value">{{ $ris->acknowledged_at?->format('M d, Y') }}</span>
-                        </div>
-                    @else
-                        <div class="sig-line" style="margin-top:24px;"></div>
-                        <div class="sig-date-line">
-                            <span class="date-label">Date:</span>
-                            <span class="date-value">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                        </div>
-                    @endif
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    {{-- ── Document Footer ── --}}
-    <div class="doc-footer">
-        <span>Form PAS-007-95 &nbsp;|&nbsp; Appendix 63 of the Government Accounting Manual (GAM)</span>
-        <span>Printed: {{ now()->format('M d, Y H:i') }}</span>
-    </div>
-
+    </div>{{-- end .page --}}
 </body>
 </html>

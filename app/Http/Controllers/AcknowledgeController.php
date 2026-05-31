@@ -17,7 +17,7 @@ class AcknowledgeController extends Controller
             ->latest()
             ->get();
 
-        $acknowledged = Transaction::where('type', 'released')
+        $acknowledged = Transaction::whereIn('type', ['released', 'received'])
             ->where('acknowledgment_status', 'acknowledged')
             ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->latest()
@@ -40,10 +40,14 @@ class AcknowledgeController extends Controller
 
         $transaction->update([
             'acknowledgment_status'  => 'acknowledged',
-            'acknowledged_by_name'   => $request->acknowledged_by_name,
-            'acknowledged_date'      => $request->acknowledged_date,
-            'acknowledgment_remarks' => $request->acknowledgment_remarks,
+            'acknowledged_by_name'   => $request->input('acknowledged_by_name'),
+            'acknowledged_date'      => $request->input('acknowledged_date'),
+            'acknowledgment_remarks' => $request->input('acknowledgment_remarks'),
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()->route('acknowledge.index')->with('success', 'Acknowledgment recorded successfully!');
     }
