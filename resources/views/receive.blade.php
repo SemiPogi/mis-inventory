@@ -53,7 +53,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                     <x-label for="name" required>Item Name</x-label>
-                    <x-input id="name" name="name" :value="old('name')" required/>
+                    <x-input id="name" name="name" :value="old('name', request('name'))" required/>
                 </div>
                 <div>
                     <x-label for="category">Category</x-label>
@@ -78,11 +78,11 @@
                 </div>
                 <div>
                     <x-label for="unit">Unit</x-label>
-                    <x-input id="unit" name="unit" :value="old('unit', 'pcs')" placeholder="pcs / ream / box"/>
+                    <x-input id="unit" name="unit" :value="old('unit', request('unit', 'pcs'))" placeholder="pcs / ream / box"/>
                 </div>
                 <div>
                     <x-label for="qty" required>Quantity</x-label>
-                    <x-input id="qty" name="qty" type="number" min="1" :value="old('qty')" required/>
+                    <x-input id="qty" name="qty" type="number" min="1" :value="old('qty', request('qty'))" required/>
                 </div>
                 <div>
                     <x-label for="expiry_date">Expiry Date</x-label>
@@ -94,11 +94,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                     <x-label for="received_from">Received From (S&amp;P Officer)</x-label>
-                    <x-input id="received_from" name="received_from" :value="old('received_from')"/>
+                    <x-input id="received_from" name="received_from" :value="old('received_from', request('received_from'))"/>
                 </div>
                 <div>
                     <x-label for="ris_iar_number">RIS / IAR Number</x-label>
-                    <x-input id="ris_iar_number" name="ris_iar_number" :value="old('ris_iar_number')"/>
+                    <x-input id="ris_iar_number" name="ris_iar_number" :value="old('ris_iar_number', request('ris_iar_number'))"/>
                 </div>
                 <div>
                     <x-label for="date_received" required>Date Received</x-label>
@@ -110,7 +110,7 @@
                 </div>
                 <div class="md:col-span-2">
                     <x-label for="remarks">Remarks</x-label>
-                    <x-textarea id="remarks" name="remarks">{{ old('remarks') }}</x-textarea>
+                    <x-textarea id="remarks" name="remarks">{{ old('remarks', request('remarks')) }}</x-textarea>
                 </div>
             </div>
 
