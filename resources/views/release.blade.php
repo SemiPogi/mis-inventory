@@ -1,6 +1,50 @@
 <x-app-layout>
     <x-page-header title="Release Item" subtitle="Release items to other offices"/>
 
+    @php
+        $authUser = auth()->user();
+        $isAutoApproved = $authUser->isAdmin() || $authUser->is_head;
+        $pendingReleaseCount = $isAutoApproved
+            ? \App\Models\Transaction::where('type', 'released')
+                ->where('head_approval_status', 'pending')
+                ->when(! $authUser->isAdmin(), fn($q) => $q->where('department_id', $authUser->department_id))
+                ->count()
+            : \App\Models\Transaction::where('type', 'released')
+                ->where('head_approval_status', 'pending')
+                ->where('released_by_user_id', $authUser->id)
+                ->count();
+    @endphp
+
+    {{-- Staff: approval-required notice --}}
+    @if(! $isAutoApproved)
+        <div class="max-w-3xl mb-4 flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            <x-heroicon-o-information-circle class="w-5 h-5 mt-0.5 shrink-0 text-blue-500"/>
+            <div>
+                <p class="font-medium">Department head approval required</p>
+                <p class="text-blue-700 mt-0.5">Your release request will be held pending until the department head approves it. Stock is deducted only after approval.</p>
+                @if($pendingReleaseCount > 0)
+                    <p class="mt-1 font-medium text-blue-900">
+                        You have {{ $pendingReleaseCount }} release {{ Str::plural('submission', $pendingReleaseCount) }} awaiting approval.
+                        <a href="{{ route('transactions.index') }}" class="underline hover:text-blue-700">View in Transactions →</a>
+                    </p>
+                @endif
+            </div>
+        </div>
+    @endif
+
+    {{-- Head / Admin: pending from staff notice --}}
+    @if($isAutoApproved && $pendingReleaseCount > 0)
+        <div class="max-w-3xl mb-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <x-heroicon-o-clock class="w-5 h-5 mt-0.5 shrink-0 text-amber-500"/>
+            <div>
+                <p class="font-medium">{{ $pendingReleaseCount }} staff release {{ Str::plural('submission', $pendingReleaseCount) }} awaiting your approval</p>
+                <p class="mt-0.5 text-amber-700">
+                    <a href="{{ route('approvals.index') }}" class="underline hover:text-amber-900 font-medium">Go to Approvals →</a>
+                </p>
+            </div>
+        </div>
+    @endif
+
     <x-bento-card class="max-w-3xl" x-data="releaseForm()" x-init="$el.classList.add('animate-slide-up')">
         <form method="POST" action="{{ route('release.store') }}" @submit.prevent="onSubmit">
             @csrf

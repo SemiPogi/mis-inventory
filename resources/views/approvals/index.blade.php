@@ -2,14 +2,31 @@
     <x-page-header title="Approvals" subtitle="Pending receive and release requests awaiting your approval"/>
 
     @if(session('success'))
-        <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+        <div class="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <x-heroicon-o-check-circle class="w-5 h-5 shrink-0 text-emerald-500"/>
             {{ session('success') }}
         </div>
     @endif
 
     @if(session('error'))
-        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div class="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <x-heroicon-o-x-circle class="w-5 h-5 shrink-0 text-red-500"/>
             {{ session('error') }}
+        </div>
+    @endif
+
+    {{-- Action guide --}}
+    @if($pendingReceives->isNotEmpty() || $pendingReleases->isNotEmpty())
+        <div class="mb-5 flex items-start gap-3 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
+            <x-heroicon-o-shield-check class="w-5 h-5 mt-0.5 shrink-0 text-violet-500"/>
+            <div>
+                <p class="font-medium">Review carefully before approving</p>
+                <p class="text-violet-700 mt-0.5">
+                    <strong>Approving a Receive</strong> adds items to inventory immediately. &nbsp;
+                    <strong>Approving a Release</strong> deducts stock and starts the acknowledgment flow. &nbsp;
+                    Rejected submissions leave inventory unchanged.
+                </p>
+            </div>
         </div>
     @endif
 
