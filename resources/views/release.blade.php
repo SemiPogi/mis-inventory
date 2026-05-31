@@ -59,7 +59,7 @@
                             <option value="{{ $item->id }}"
                                     data-qty="{{ $item->current_qty }}"
                                     data-unit="{{ $item->unit }}"
-                                    @selected(old('item_id') == $item->id)>
+                                    @selected(old('item_id', request('item_id')) == $item->id)>
                                 {{ $item->name }}{{ $item->brand ? ' — '.$item->brand : '' }}
                                 ({{ $item->current_qty }} {{ $item->unit }} available)
                             </option>
@@ -72,7 +72,7 @@
                 </div>
                 <div>
                     <x-label for="qty" required>Quantity to Release</x-label>
-                    <x-input id="qty" name="qty" type="number" min="1" :value="old('qty')" required x-model.number="qty"/>
+                    <x-input id="qty" name="qty" type="number" min="1" :value="old('qty', request('qty'))" required x-model.number="qty"/>
                 </div>
             </div>
 
@@ -80,15 +80,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                     <x-label for="released_to_office" required>Receiving Office</x-label>
-                    <x-input id="released_to_office" name="released_to_office" :value="old('released_to_office')" required placeholder="e.g. Nursing Unit 3"/>
+                    <x-input id="released_to_office" name="released_to_office" :value="old('released_to_office', request('released_to_office'))" required placeholder="e.g. Nursing Unit 3"/>
                 </div>
                 <div>
                     <x-label for="receiver_name" required>Receiver Name</x-label>
-                    <x-input id="receiver_name" name="receiver_name" :value="old('receiver_name')" required/>
+                    <x-input id="receiver_name" name="receiver_name" :value="old('receiver_name', request('receiver_name'))" required/>
                 </div>
                 <div>
                     <x-label for="receiver_designation">Receiver Designation</x-label>
-                    <x-input id="receiver_designation" name="receiver_designation" :value="old('receiver_designation')" placeholder="e.g. Head Nurse"/>
+                    <x-input id="receiver_designation" name="receiver_designation" :value="old('receiver_designation', request('receiver_designation'))" placeholder="e.g. Head Nurse"/>
                 </div>
                 <div>
                     <x-label for="date_released" required>Date Released</x-label>
@@ -100,11 +100,11 @@
                 </div>
                 <div>
                     <x-label for="purpose">Purpose</x-label>
-                    <x-input id="purpose" name="purpose" :value="old('purpose')" placeholder="e.g. For printer replacement"/>
+                    <x-input id="purpose" name="purpose" :value="old('purpose', request('purpose'))" placeholder="e.g. For printer replacement"/>
                 </div>
                 <div class="md:col-span-2">
                     <x-label for="remarks">Remarks</x-label>
-                    <x-textarea id="remarks" name="remarks">{{ old('remarks') }}</x-textarea>
+                    <x-textarea id="remarks" name="remarks">{{ old('remarks', request('remarks')) }}</x-textarea>
                 </div>
             </div>
 
@@ -139,8 +139,8 @@
     <script>
         function releaseForm() {
             return {
-                itemId: '{{ old('item_id', '') }}',
-                qty: {{ (int) old('qty', 0) }},
+                itemId: '{{ old('item_id', request()->query('item_id', '')) }}',
+                qty: {{ (int) old('qty', request()->query('qty', 0)) }},
                 available: 0,
                 unit: '',
                 confirming: false,
