@@ -17,7 +17,7 @@ Add 6 feature groups to the mis-inventory system, plus a frontend UX reorganizat
 |---|---|---|
 | A | Pending Self-Service (Cancel + Re-submit) | Small |
 | B | Notifications (submit → head, approve/reject/collect → staff) | Small-Medium |
-| C | Approvals UX (Bulk Approve + Stock Reservation) | Medium |
+| C | Approvals UX (Bulk Approve + Stock Reservation + RIS prompt) | Medium |
 | D | Print Slip (Receive / Release) | Medium |
 | E | Monitoring (Low Stock Alerts + Audit Log) | Medium-Large |
 | F | Warranty Tracking | Medium |
@@ -175,6 +175,63 @@ On partial failure: approve the passing ones, redirect back with:
 - `availableLabel` computed field in `releaseForm()` shows: `250 available / 10 pending approval`
 - Soft warning shown (not hard block) if `qty > (current_qty - reserved_qty)`:
   > "Note: 10 pcs are pending approval. Releasing may exceed available stock if those are approved first."
+
+### C3. RIS Prompt After Approval
+
+When a head or admin approves a transaction, show a modal asking if they want to create a RIS for it.
+
+**When it appears:**
+- After approving a **receive** — the dept may need a RIS to document items received from Supply
+- After approving a **release** — the release may need a formal RIS for the receiving office
+
+**Flow:**
+
+```
+Head clicks Approve
+  → approval runs (inventory updated, notifications sent)
+  → redirect to approvals.index with session flash: suggest_ris = { tx_id, type, item, qty, unit, dept }
+  → approvals.index detects session flash → shows RIS prompt modal
+```
+
+**Modal content:**
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Create a RIS for this transaction?                  │
+│                                                      │
+│  You just approved: 5 reams of Bond Paper A4         │
+│  (Receive — MIS Office)                              │
+│                                                      │
+│  Would you like to open the RIS form pre-filled      │
+│  with this transaction's details?                    │
+│                                                      │
+│  [ Not Now ]           [ Yes, Create RIS → ]        │
+└─────────────────────────────────────────────────────┘
+```
+
+**"Yes, Create RIS" button:** redirects to `route('ris.create')` with query params:
+```
+/ris/create?purpose=Received+[qty]+[unit]+of+[item]
+            &department_id=[dept_id]
+```
+The RIS create form already reads `old()` — the query params pre-fill purpose and pre-select the requesting department.
+
+**"Not Now" button:** dismisses modal, stays on approvals page. Modal does not reappear.
+
+**Bulk approve:** RIS prompt is shown once after bulk approval with a summary: "You approved N transactions. Would you like to create a RIS?" — links to `/ris/create` without specific pre-fill (too many items to pre-fill sensibly).
+
+**Implementation detail:** `TransactionApprovalController::approve()` stores the prompt data in session:
+```php
+session()->flash('suggest_ris', [
+    'item'  => $transaction->item_name_snapshot,
+    'qty'   => $transaction->qty,
+    'unit'  => $transaction->unit,
+    'type'  => $transaction->type,
+    'dept'  => $transaction->department?->name,
+    'dept_id' => $transaction->department_id,
+]);
+```
+`approvals/index.blade.php` checks `session('suggest_ris')` and renders an Alpine.js modal that auto-opens on page load.
 
 ---
 
@@ -431,6 +488,7 @@ No TBD or TODO sections. All features have defined routes, models, and UI placem
 - `cancelled` enum value in Group A is used consistently across cancel controller, item cleanup logic, audit log action values, and badge exclusion queries.
 - Notification helper signature matches existing `Notification::notify($userId, $type, $title, $body, $data)` pattern used by RIS.
 - Bulk approve in Group C uses the same per-transaction logic as single approve — no duplication of business logic.
+- RIS prompt in Group C (C3) uses `session()->flash()` so it only shows once per approval action — not on every page refresh. ✓
 - Unified Alerts card in UX section references both Group E (low stock) and Group F (warranty) data — both must be passed from `DashboardController`.
 
 ### Scope check
