@@ -65,7 +65,11 @@
                         <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? 'S&P Office' : $tx->released_to_office }}</td>
                         <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? $tx->date_received : $tx->date_released }}</td>
                         <td class="px-6 py-3">
-                            @if($tx->head_approval_status === 'pending')
+                            @if($tx->head_approval_status === 'cancelled')
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">
+                                    Cancelled
+                                </span>
+                            @elseif($tx->head_approval_status === 'pending')
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
                                     Pending Approval
                                 </span>
@@ -83,7 +87,35 @@
                             @endif
                         </td>
                         <td class="px-6 py-3 text-right">
-                            <a href="{{ route('transactions.show', $tx->id) }}" class="text-primary-600 hover:text-primary-700 text-xs font-medium">View →</a>
+                            @php
+                                $txSubmitterId = $tx->type === 'received'
+                                    ? $tx->received_by_user_id
+                                    : $tx->released_by_user_id;
+                                $txIsOwner = auth()->id() === $txSubmitterId;
+                            @endphp
+                            <div class="flex items-center justify-end gap-3">
+                                <a href="{{ route('transactions.show', $tx->id) }}"
+                                   class="text-primary-600 hover:text-primary-700 text-xs font-medium">View →</a>
+
+                                @if($txIsOwner && $tx->isPendingApproval())
+                                    <form method="POST" action="{{ route('transactions.cancel', $tx) }}"
+                                          onsubmit="return confirm('Cancel this submission?')">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit"
+                                                class="text-rose-600 hover:text-rose-700 text-xs font-medium">
+                                            Cancel
+                                        </button>
+                                    </form>
+                                @endif
+
+                                @if($txIsOwner && $tx->isRejected())
+                                    <a href="{{ route('transactions.resubmit', $tx) }}"
+                                       class="text-primary-600 hover:text-primary-700 text-xs font-medium">
+                                        Re-submit →
+                                    </a>
+                                @endif
+                            </div>
                         </td>
                     </x-table.row>
                 @endforeach
