@@ -7,7 +7,7 @@
 
 ## Goal
 
-Add a department head (or admin) approval step to the Receive and Release workflows. Item quantities are only updated after approval. Every submission — including those made by the dept head themselves — requires approval.
+Add a department head (or admin) approval step to the Receive and Release workflows. Staff submissions are held pending until the head or admin approves. Dept heads and admins are auto-approved — their submissions update inventory immediately.
 
 ---
 
@@ -41,11 +41,15 @@ Staff submits receive form
   → Transaction created: type=received, head_approval_status=pending
   → Item qty NOT added to inventory yet
 
-Head / Admin approves
+Dept Head / Admin submits receive form
+  → Transaction created: type=received, head_approval_status=approved (auto)
+  → Item added to inventory immediately
+
+Head / Admin approves a pending transaction
   → Item added to inventory (create or increment)
   → head_approval_status = approved, head_approved_by_id, head_approved_at set
 
-Head / Admin rejects
+Head / Admin rejects a pending transaction
   → head_approval_status = rejected, head_rejection_notes saved
   → No inventory change
 ```
@@ -57,25 +61,33 @@ Staff submits release form
   → Transaction created: type=released, head_approval_status=pending
   → Item qty NOT decremented yet
 
-Head / Admin approves
+Dept Head / Admin submits release form
+  → Transaction created: type=released, head_approval_status=approved (auto)
+  → Item qty decremented immediately, acknowledgment_status=pending
+
+Head / Admin approves a pending transaction
   → Item qty decremented
   → head_approval_status = approved
   → acknowledgment_status = pending (ack flow begins)
 
-Head / Admin rejects
+Head / Admin rejects a pending transaction
   → head_approval_status = rejected, head_rejection_notes saved
   → Item qty unchanged
 ```
 
 ### Authorization rules
 
-| Who | Can approve |
+| Who submits | Result |
 |---|---|
-| Dept Head | Transactions from their department, **except their own submissions** |
-| Admin | Any department's transactions, **except their own submissions** |
-| Staff | Cannot approve |
+| **Staff** | `head_approval_status = pending` — waits for head/admin |
+| **Dept Head** | Auto-approved — `head_approval_status = approved`, inventory updated immediately |
+| **Admin** | Auto-approved — `head_approval_status = approved`, inventory updated immediately |
 
-Self-approval is always blocked (403) — if `$transaction->created_by === auth()->id()`, reject regardless of role.
+| Who can approve pending transactions |
+|---|
+| Dept Head — their own department's pending transactions only |
+| Admin — any department's pending transactions |
+| Staff — cannot approve |
 
 ---
 
@@ -98,16 +110,14 @@ PATCH  /approvals/{transaction}/reject    → reject  (approvals.reject)
 - Split into two collections: `$pendingReceives` (type=received) and `$pendingReleases` (type=released)
 
 **`approve(Transaction $tx)`**
-- Block self-approval
-- Verify user can approve this dept's transactions
+- Verify user can approve this dept's transactions (head = own dept only, admin = any)
 - If `type = received`: find or create Item, increment qty
 - If `type = released`: decrement item qty, set `acknowledgment_status = pending`
 - Update: `head_approval_status = approved`, `head_approved_by_id`, `head_approved_at`
 
 **`reject(Request $request, Transaction $tx)`**
 - Validate `notes` required
-- Block self-approval
-- Verify authorization
+- Verify authorization (head = own dept only, admin = any)
 - Update: `head_approval_status = rejected`, `head_rejection_notes = $request->notes`
 - No inventory change
 
@@ -116,16 +126,12 @@ PATCH  /approvals/{transaction}/reject    → reject  (approvals.reject)
 ## Section 4 — Changes to Existing Controllers
 
 ### `ReceiveController::store()`
-- Remove all inventory update logic (finding/creating Item, logging Transaction)
-- Create transaction with `head_approval_status = pending`
-- Do NOT update item qty
-- Redirect to receive index with "Submitted for head approval" message
+- If submitter is head or admin: set `head_approval_status = approved`, update inventory immediately (existing logic), set `head_approved_by_id = auth()->id()`, `head_approved_at = now()`
+- If submitter is staff: set `head_approval_status = pending`, do NOT update inventory, redirect with "Submitted for head approval" message
 
 ### `ReleaseController::store()`
-- Remove qty decrement
-- Create transaction with `head_approval_status = pending`, `acknowledgment_status = pending`
-- Do NOT decrement item qty
-- Redirect to release index with "Submitted for head approval" message
+- If submitter is head or admin: set `head_approval_status = approved`, decrement qty immediately (existing logic), `acknowledgment_status = pending`
+- If submitter is staff: set `head_approval_status = pending`, do NOT decrement qty, redirect with "Submitted for head approval" message
 
 ---
 
