@@ -5,15 +5,50 @@
         </a>
     </div>
 
+    @php
+        $submitterId = $transaction->type === 'received'
+            ? $transaction->received_by_user_id
+            : $transaction->released_by_user_id;
+        $isOwner = auth()->id() === $submitterId;
+    @endphp
+
     <x-page-header :title="$transaction->item_name_snapshot"
                    :subtitle="'Transaction #' . $transaction->id">
         <x-slot:actions>
-            @if($transaction->type === 'received')
+            {{-- Status badge --}}
+            @if($transaction->isCancelled())
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                    Cancelled
+                </span>
+            @elseif($transaction->type === 'received')
                 <x-status-badge status="received">IN — Received</x-status-badge>
             @elseif($transaction->acknowledgment_status === 'acknowledged')
                 <x-status-badge status="acknowledged">OUT — Acknowledged</x-status-badge>
             @else
                 <x-status-badge status="pending">OUT — Pending</x-status-badge>
+            @endif
+
+            {{-- Cancel: own pending submission only --}}
+            @if($isOwner && $transaction->isPendingApproval())
+                <form method="POST" action="{{ route('transactions.cancel', $transaction) }}"
+                      onsubmit="return confirm('Cancel this submission? This cannot be undone.')">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit"
+                            class="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-white hover:bg-rose-50 text-rose-700 text-xs font-semibold px-3 py-2 transition">
+                        <x-heroicon-o-x-circle class="w-4 h-4"/>
+                        Cancel Submission
+                    </button>
+                </form>
+            @endif
+
+            {{-- Re-submit: own rejected submission only --}}
+            @if($isOwner && $transaction->isRejected())
+                <a href="{{ route('transactions.resubmit', $transaction) }}"
+                   class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-3 py-2 transition">
+                    <x-heroicon-o-arrow-path class="w-4 h-4"/>
+                    Re-submit
+                </a>
             @endif
         </x-slot:actions>
     </x-page-header>
@@ -71,6 +106,15 @@
 
         {{-- Right: acknowledgment --}}
         <x-bento-card class="space-y-4">
+
+            {{-- Rejection notice (shown to the submitter only) --}}
+            @if($isOwner && $transaction->isRejected())
+                <div class="rounded-lg bg-rose-50 border border-rose-200 p-4">
+                    <p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">Rejected</p>
+                    <p class="text-sm text-rose-900">{{ $transaction->head_rejection_notes ?? 'No reason provided.' }}</p>
+                </div>
+            @endif
+
             <p class="text-xs font-medium text-ink-muted uppercase tracking-wide">Acknowledgment</p>
 
             @if($transaction->type === 'received')
