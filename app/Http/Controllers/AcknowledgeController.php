@@ -13,6 +13,8 @@ class AcknowledgeController extends Controller
 
         $pending = Transaction::where('type', 'released')
             ->where('acknowledgment_status', 'pending')
+            ->where(fn($q) => $q->whereNull('head_approval_status')
+                                ->orWhere('head_approval_status', 'approved'))
             ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->latest()
             ->get();
