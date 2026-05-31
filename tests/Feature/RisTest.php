@@ -354,7 +354,7 @@ class RisTest extends TestCase
         $response->assertSee($ris2->ris_number);
     }
 
-    public function test_print_only_available_for_completed_ris(): void
+    public function test_staff_can_print_own_dept_ris_at_any_stage(): void
     {
         $dept  = $this->makeDept();
         $staff = $this->makeStaff($dept);
@@ -362,10 +362,23 @@ class RisTest extends TestCase
 
         $this->actingAs($staff)
             ->get(route('ris.print', $ris))
+            ->assertOk();
+    }
+
+    public function test_staff_cannot_print_other_dept_ris(): void
+    {
+        $dept1 = $this->makeDept();
+        $dept2 = $this->makeDept();
+        $staff1 = $this->makeStaff($dept1);
+        $staff2 = $this->makeStaff($dept2);
+        $ris   = $this->makeRis($staff1, $dept1, 'completed');
+
+        $this->actingAs($staff2)
+            ->get(route('ris.print', $ris))
             ->assertForbidden();
     }
 
-    public function test_admin_can_print_completed_ris(): void
+    public function test_admin_can_print_any_ris(): void
     {
         $dept  = $this->makeDept();
         $staff = $this->makeStaff($dept);
