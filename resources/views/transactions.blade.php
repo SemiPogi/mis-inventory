@@ -65,7 +65,16 @@
                         <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? 'S&P Office' : $tx->released_to_office }}</td>
                         <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? $tx->date_received : $tx->date_released }}</td>
                         <td class="px-6 py-3">
-                            @if($tx->type === 'received')
+                            @if($tx->head_approval_status === 'pending')
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                                    Pending Approval
+                                </span>
+                            @elseif($tx->head_approval_status === 'rejected')
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700"
+                                      title="{{ $tx->head_rejection_notes }}">
+                                    Rejected
+                                </span>
+                            @elseif($tx->type === 'received')
                                 <x-status-badge status="received"/>
                             @elseif($tx->acknowledgment_status === 'acknowledged')
                                 <x-status-badge status="acknowledged"/>
