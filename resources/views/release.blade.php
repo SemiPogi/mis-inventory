@@ -56,12 +56,14 @@
                     <x-select id="item_id" name="item_id" required x-model="itemId" @change="onItemChange($event)">
                         <option value="">— Select item in stock —</option>
                         @foreach($items as $item)
+                            @php $reserved = (int)($reservations[$item->id] ?? 0); @endphp
                             <option value="{{ $item->id }}"
                                     data-qty="{{ $item->current_qty }}"
                                     data-unit="{{ $item->unit }}"
+                                    data-reserved="{{ $reserved }}"
                                     @selected(old('item_id', request('item_id')) == $item->id)>
                                 {{ $item->name }}{{ $item->brand ? ' — '.$item->brand : '' }}
-                                ({{ $item->current_qty }} {{ $item->unit }} available)
+                                ({{ $item->current_qty }} {{ $item->unit }} available@if($reserved > 0), {{ $reserved }} reserved@endif)
                             </option>
                         @endforeach
                     </x-select>
@@ -69,6 +71,11 @@
                 <div>
                     <x-label>Available Qty</x-label>
                     <x-input readonly x-model="availableLabel" class="bg-surface-page text-ink-muted"/>
+                    <p x-show="overReservation"
+                       x-cloak
+                       class="mt-1 text-xs text-amber-700">
+                        Note: <span x-text="reserved"></span> <span x-text="unit"></span> are pending approval. Releasing may exceed available stock if those are approved first.
+                    </p>
                 </div>
                 <div>
                     <x-label for="qty" required>Quantity to Release</x-label>
@@ -142,10 +149,17 @@
                 itemId: '{{ old('item_id', request()->query('item_id', '')) }}',
                 qty: {{ (int) old('qty', request()->query('qty', 0)) }},
                 available: 0,
+                reserved: 0,
                 unit: '',
                 confirming: false,
                 get availableLabel() {
-                    return this.available ? `${this.available} ${this.unit}` : '';
+                    if (!this.available) return '';
+                    return this.reserved > 0
+                        ? `${this.available} ${this.unit} available / ${this.reserved} pending approval`
+                        : `${this.available} ${this.unit} available`;
+                },
+                get overReservation() {
+                    return this.reserved > 0 && this.qty > (this.available - this.reserved);
                 },
                 init() {
                     if (this.itemId) this.refreshAvailable();
@@ -157,6 +171,7 @@
                     selectEl = selectEl || document.getElementById('item_id');
                     const opt = selectEl.options[selectEl.selectedIndex];
                     this.available = parseInt(opt?.dataset.qty || 0, 10);
+                    this.reserved  = parseInt(opt?.dataset.reserved || 0, 10);
                     this.unit = opt?.dataset.unit || '';
                 },
                 onSubmit(e) {

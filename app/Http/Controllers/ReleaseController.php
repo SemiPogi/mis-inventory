@@ -13,10 +13,21 @@ class ReleaseController extends Controller
     public function index()
     {
         $scope = $this->deptScope();
+
         $items = Item::where('current_qty', '>', 0)
             ->when($scope, fn($q) => $q->where('department_id', $scope))
             ->get();
-        return view('release', compact('items'));
+
+        // Sum of pending-approval release qty per item (soft reservation)
+        $reservations = Transaction::where('type', 'released')
+            ->where('head_approval_status', 'pending')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->selectRaw('item_id, SUM(qty) as reserved_qty')
+            ->groupBy('item_id')
+            ->pluck('reserved_qty', 'item_id')
+            ->toArray();
+
+        return view('release', compact('items', 'reservations'));
     }
 
     public function store(Request $request)
