@@ -248,4 +248,54 @@
             }
         }
     </script>
+
+    {{-- ── RIS Prompt Modal ─────────────────────────────────────── --}}
+    @if(session('suggest_ris'))
+        @php $risData = session('suggest_ris') @endphp
+        <div x-data="{ open: true }"
+             x-show="open"
+             x-cloak
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div class="bg-surface-tile rounded-2xl shadow-tile-hover p-6 max-w-md mx-4 animate-pop">
+                <h3 class="text-base font-semibold text-ink-heading mb-3">Create a RIS for this transaction?</h3>
+
+                @if(!($risData['bulk'] ?? false))
+                    <p class="text-sm text-ink-body mb-1">
+                        You just approved:
+                        <strong>{{ $risData['qty'] }} {{ $risData['unit'] }} of {{ $risData['item'] }}</strong>
+                    </p>
+                    <p class="text-sm text-ink-muted mb-4">
+                        ({{ ucfirst($risData['type']) }} — {{ $risData['dept'] ?? '—' }})
+                    </p>
+                    <p class="text-sm text-ink-body mb-5">
+                        Would you like to open the RIS form pre-filled with this transaction's details?
+                    </p>
+                @else
+                    <p class="text-sm text-ink-body mb-5">
+                        You approved <strong>{{ $risData['count'] }}</strong>
+                        {{ $risData['count'] === 1 ? 'transaction' : 'transactions' }}.
+                        Would you like to create a RIS?
+                    </p>
+                @endif
+
+                <div class="flex justify-end gap-3">
+                    <x-button type="button" variant="ghost" @click="open = false">Not Now</x-button>
+
+                    @if(!($risData['bulk'] ?? false))
+                        <x-button as="a" variant="primary"
+                            href="{{ route('ris.create', array_filter([
+                                'purpose'       => ucfirst($risData['type']).' '.$risData['qty'].' '.$risData['unit'].' of '.$risData['item'],
+                                'department_id' => $risData['dept_id'],
+                            ])) }}">
+                            Yes, Create RIS →
+                        </x-button>
+                    @else
+                        <x-button as="a" variant="primary" href="{{ route('ris.create') }}">
+                            Yes, Create RIS →
+                        </x-button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 </x-app-layout>

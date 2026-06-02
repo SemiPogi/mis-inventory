@@ -69,6 +69,15 @@ class TransactionApprovalController extends Controller
             ? "Approved — {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" added to inventory."
             : "Approved — {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" deducted from inventory. Awaiting acknowledgment.";
 
+        session()->flash('suggest_ris', [
+            'item'    => $transaction->item_name_snapshot,
+            'qty'     => $transaction->qty,
+            'unit'    => $transaction->unit,
+            'type'    => $transaction->type,
+            'dept'    => $transaction->department?->name,
+            'dept_id' => $transaction->department_id,
+        ]);
+
         return redirect()->route('approvals.index')
             ->with('success', $successMsg);
     }
@@ -181,6 +190,10 @@ class TransactionApprovalController extends Controller
         $redirect = redirect()->route('approvals.index');
 
         if ($approved > 0) {
+            session()->flash('suggest_ris', [
+                'bulk'  => true,
+                'count' => $approved,
+            ]);
             $word = $approved === 1 ? 'transaction' : 'transactions';
             $redirect = $redirect->with('success', "{$approved} {$word} approved successfully.");
         }
