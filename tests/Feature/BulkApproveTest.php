@@ -113,6 +113,24 @@ class BulkApproveTest extends TestCase
         $this->assertEquals(5, $item->fresh()->current_qty);
     }
 
+    public function test_bulk_approve_release_sets_acknowledgment_pending(): void
+    {
+        $dept  = $this->makeDept();
+        $head  = $this->makeStaff($dept, isHead: true);
+        $item  = $this->makeItem($dept, 10);
+        $staff = $this->makeStaff($dept);
+        $tx    = $this->makeRelease($item, $staff, ['qty' => 3]);
+
+        $this->actingAs($head)
+            ->post(route('approvals.bulk-approve'), ['ids' => [$tx->id]]);
+
+        $this->assertDatabaseHas('transactions', [
+            'id'                     => $tx->id,
+            'head_approval_status'   => 'approved',
+            'acknowledgment_status'  => 'pending',
+        ]);
+    }
+
     public function test_bulk_approve_sends_notification_per_transaction(): void
     {
         $dept  = $this->makeDept();

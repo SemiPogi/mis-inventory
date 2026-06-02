@@ -6,6 +6,7 @@ use App\Models\Notification;
 use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class TransactionApprovalController extends Controller
@@ -62,27 +63,7 @@ class TransactionApprovalController extends Controller
 
         $transaction->update($updates);
 
-        $submitterId = $transaction->type === 'received'
-            ? $transaction->received_by_user_id
-            : $transaction->released_by_user_id;
-
-        $notifType  = $transaction->type === 'received' ? 'tx_approved_receive' : 'tx_approved_release';
-        $notifTitle = $transaction->type === 'received'
-            ? 'Receive Approved — Collect from Supply'
-            : 'Release Approved';
-        $notifBody  = $transaction->type === 'received'
-            ? "Your receive request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved. Items have been added to inventory. Please collect from the Supply Department."
-            : "Your release request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved and inventory has been updated.";
-
-        if ($submitterId) {
-            Notification::notify(
-                $submitterId,
-                $notifType,
-                $notifTitle,
-                $notifBody,
-                ['url' => route('transactions.show', $transaction)]
-            );
-        }
+        $this->notifyApproval($transaction);
 
         $successMsg = $transaction->type === 'received'
             ? "Approved — {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" added to inventory."
@@ -138,12 +119,18 @@ class TransactionApprovalController extends Controller
             'ids.*' => ['integer', 'exists:transactions,id'],
         ]);
 
+        $ids          = $request->ids;
+        $transactions = Transaction::with(['item', 'department'])
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
         $user     = auth()->user();
         $approved = 0;
         $failed   = [];
 
-        foreach ($request->ids as $id) {
-            $transaction = Transaction::with(['item', 'department'])->find($id);
+        foreach ($ids as $id) {
+            $transaction = $transactions->get($id);
 
             if (! $transaction || ! $transaction->isPendingApproval()) {
                 $failed[] = "Transaction #{$id}: not pending";
@@ -158,53 +145,35 @@ class TransactionApprovalController extends Controller
 
             $item = $transaction->item;
 
-            if ($transaction->type === 'received') {
-                $item->total_qty_received += $transaction->qty;
-                $item->current_qty        += $transaction->qty;
-                $item->save();
-            } elseif ($transaction->type === 'released') {
-                if ($item->current_qty < $transaction->qty) {
-                    $failed[] = "\"{$transaction->item_name_snapshot}\": insufficient stock ({$item->current_qty} {$item->unit} available)";
-                    continue;
-                }
-                $item->current_qty -= $transaction->qty;
-                $item->save();
-            }
-
             $updates = [
                 'head_approval_status' => 'approved',
                 'head_approved_by_id'  => auth()->id(),
                 'head_approved_at'     => now(),
             ];
 
-            if ($transaction->type === 'released') {
+            if ($transaction->type === 'received') {
+                $item->total_qty_received += $transaction->qty;
+                $item->current_qty        += $transaction->qty;
+
+                DB::transaction(function () use ($item, $transaction, $updates) {
+                    $item->save();
+                    $transaction->update($updates);
+                });
+            } elseif ($transaction->type === 'released') {
+                if ($item->current_qty < $transaction->qty) {
+                    $failed[] = "\"{$transaction->item_name_snapshot}\": insufficient stock ({$item->current_qty} {$item->unit} available)";
+                    continue;
+                }
+                $item->current_qty -= $transaction->qty;
                 $updates['acknowledgment_status'] = 'pending';
+
+                DB::transaction(function () use ($item, $transaction, $updates) {
+                    $item->save();
+                    $transaction->update($updates);
+                });
             }
 
-            $transaction->update($updates);
-
-            // Notify submitter (same pattern as single approve)
-            $submitterId = $transaction->type === 'received'
-                ? $transaction->received_by_user_id
-                : $transaction->released_by_user_id;
-
-            $notifType  = $transaction->type === 'received' ? 'tx_approved_receive' : 'tx_approved_release';
-            $notifTitle = $transaction->type === 'received'
-                ? 'Receive Approved — Collect from Supply'
-                : 'Release Approved';
-            $notifBody  = $transaction->type === 'received'
-                ? "Your receive request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved. Items have been added to inventory. Please collect from the Supply Department."
-                : "Your release request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved and inventory has been updated.";
-
-            if ($submitterId) {
-                Notification::notify(
-                    $submitterId,
-                    $notifType,
-                    $notifTitle,
-                    $notifBody,
-                    ['url' => route('transactions.show', $transaction)]
-                );
-            }
+            $this->notifyApproval($transaction);
 
             $approved++;
         }
@@ -236,5 +205,32 @@ class TransactionApprovalController extends Controller
         if ($user->isAdmin()) return;
         if ($user->is_head && $user->department_id === $transaction->department_id) return;
         abort(403, 'You are not authorized to approve this transaction.');
+    }
+
+    private function notifyApproval(Transaction $transaction): void
+    {
+        $submitterId = $transaction->type === 'received'
+            ? $transaction->received_by_user_id
+            : $transaction->released_by_user_id;
+
+        if (! $submitterId) {
+            return;
+        }
+
+        $notifType  = $transaction->type === 'received' ? 'tx_approved_receive' : 'tx_approved_release';
+        $notifTitle = $transaction->type === 'received'
+            ? 'Receive Approved — Collect from Supply'
+            : 'Release Approved';
+        $notifBody  = $transaction->type === 'received'
+            ? "Your receive request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved. Items have been added to inventory. Please collect from the Supply Department."
+            : "Your release request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved and inventory has been updated.";
+
+        Notification::notify(
+            $submitterId,
+            $notifType,
+            $notifTitle,
+            $notifBody,
+            ['url' => route('transactions.show', $transaction)]
+        );
     }
 }
