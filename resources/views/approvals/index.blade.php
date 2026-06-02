@@ -8,6 +8,13 @@
         </div>
     @endif
 
+    @if(session('warning'))
+        <div class="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <x-heroicon-o-exclamation-triangle class="w-5 h-5 shrink-0 text-amber-500"/>
+            {{ session('warning') }}
+        </div>
+    @endif
+
     @if(session('error'))
         <div class="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <x-heroicon-o-x-circle class="w-5 h-5 shrink-0 text-red-500"/>
@@ -30,7 +37,18 @@
         </div>
     @endif
 
+    {{-- Bulk-approve form (hidden; inputs injected by Alpine) --}}
+    <form x-ref="bulkForm" method="POST" action="{{ route('approvals.bulk-approve') }}" class="hidden">
+        @csrf
+        <template x-for="id in selected" :key="id">
+            <input type="hidden" name="ids[]" :value="id">
+        </template>
+    </form>
+
+    <div x-data="approvalManager()">
+
     {{-- ── Pending Receives ─────────────────────────────────────── --}}
+    @php $receiveIds = $pendingReceives->pluck('id')->all(); @endphp
     <x-bento-card :padded="false" class="mb-6">
         <div class="px-6 py-4 border-b border-surface-border">
             <h2 class="text-sm font-semibold text-ink-heading">
@@ -46,6 +64,12 @@
                 <table class="w-full text-sm">
                     <thead class="bg-surface-page/50">
                         <tr class="border-b border-surface-border">
+                            <th class="px-4 py-3 w-10">
+                                <input type="checkbox"
+                                       class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                       :checked="allSelected({{ json_encode($receiveIds) }})"
+                                       @change="$event.target.checked ? selectAll({{ json_encode($receiveIds) }}) : deselectAll({{ json_encode($receiveIds) }})">
+                            </th>
                             <th class="text-left px-6 py-3 text-xs font-medium text-ink-muted uppercase tracking-wide">Item</th>
                             <th class="text-left px-6 py-3 text-xs font-medium text-ink-muted uppercase tracking-wide">Qty</th>
                             <th class="text-left px-6 py-3 text-xs font-medium text-ink-muted uppercase tracking-wide">Unit</th>
@@ -61,6 +85,12 @@
                     <tbody class="divide-y divide-surface-border">
                         @foreach($pendingReceives as $tx)
                             <tr x-data="{ rejectOpen: false }">
+                                <td class="px-4 py-3 w-10">
+                                    <input type="checkbox"
+                                           class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                           :checked="isSelected({{ $tx->id }})"
+                                           @change="toggle({{ $tx->id }})">
+                                </td>
                                 <td class="px-6 py-3 font-medium text-ink-heading">{{ $tx->item_name_snapshot }}</td>
                                 <td class="px-6 py-3 text-ink-body">{{ $tx->qty }}</td>
                                 <td class="px-6 py-3 text-ink-body">{{ $tx->unit }}</td>
@@ -104,6 +134,7 @@
     </x-bento-card>
 
     {{-- ── Pending Releases ─────────────────────────────────────── --}}
+    @php $releaseIds = $pendingReleases->pluck('id')->all(); @endphp
     <x-bento-card :padded="false">
         <div class="px-6 py-4 border-b border-surface-border">
             <h2 class="text-sm font-semibold text-ink-heading">
@@ -119,6 +150,12 @@
                 <table class="w-full text-sm">
                     <thead class="bg-surface-page/50">
                         <tr class="border-b border-surface-border">
+                            <th class="px-4 py-3 w-10">
+                                <input type="checkbox"
+                                       class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                       :checked="allSelected({{ json_encode($releaseIds) }})"
+                                       @change="$event.target.checked ? selectAll({{ json_encode($releaseIds) }}) : deselectAll({{ json_encode($releaseIds) }})">
+                            </th>
                             <th class="text-left px-6 py-3 text-xs font-medium text-ink-muted uppercase tracking-wide">Item</th>
                             <th class="text-left px-6 py-3 text-xs font-medium text-ink-muted uppercase tracking-wide">Qty</th>
                             <th class="text-left px-6 py-3 text-xs font-medium text-ink-muted uppercase tracking-wide">Unit</th>
@@ -135,6 +172,12 @@
                     <tbody class="divide-y divide-surface-border">
                         @foreach($pendingReleases as $tx)
                             <tr x-data="{ rejectOpen: false }">
+                                <td class="px-4 py-3 w-10">
+                                    <input type="checkbox"
+                                           class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                           :checked="isSelected({{ $tx->id }})"
+                                           @change="toggle({{ $tx->id }})">
+                                </td>
                                 <td class="px-6 py-3 font-medium text-ink-heading">{{ $tx->item_name_snapshot }}</td>
                                 <td class="px-6 py-3 text-ink-body">{{ $tx->qty }}</td>
                                 <td class="px-6 py-3 text-ink-body">{{ $tx->unit }}</td>
@@ -177,4 +220,44 @@
             </div>
         @endif
     </x-bento-card>
+
+    {{-- Sticky action bar — appears when ≥1 checkbox is checked --}}
+    <div x-show="selected.length > 0"
+         x-cloak
+         class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-surface-border shadow-lg px-6 py-4 flex items-center gap-4">
+        <span class="text-sm text-ink-body">
+            <span x-text="selected.length"></span> selected
+        </span>
+        <x-button variant="primary" @click="$refs.bulkForm.submit()">
+            Approve Selected (<span x-text="selected.length"></span>)
+        </x-button>
+    </div>
+
+    </div>{{-- end x-data="approvalManager()" --}}
+
+    <script>
+        function approvalManager() {
+            return {
+                selected: [],
+                toggle(id) {
+                    const idx = this.selected.indexOf(id);
+                    idx === -1 ? this.selected.push(id) : this.selected.splice(idx, 1);
+                },
+                selectAll(ids) {
+                    ids.forEach(id => {
+                        if (!this.selected.includes(id)) this.selected.push(id);
+                    });
+                },
+                deselectAll(ids) {
+                    this.selected = this.selected.filter(id => !ids.includes(id));
+                },
+                isSelected(id) {
+                    return this.selected.includes(id);
+                },
+                allSelected(ids) {
+                    return ids.length > 0 && ids.every(id => this.selected.includes(id));
+                },
+            }
+        }
+    </script>
 </x-app-layout>
