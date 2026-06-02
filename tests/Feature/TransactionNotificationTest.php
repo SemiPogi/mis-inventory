@@ -173,4 +173,69 @@ class TransactionNotificationTest extends TestCase
             'type'    => 'tx_rejected',
         ]);
     }
+
+    // ── Edge cases ─────────────────────────────────────────────────────────
+
+    public function test_receive_submission_notifies_all_admins_when_no_head_in_dept(): void
+    {
+        $dept   = $this->makeDept();
+        $staff  = $this->makeStaff($dept);          // no head in this dept
+        $admin1 = User::factory()->create(['role' => 'admin', 'department_id' => null]);
+        $admin2 = User::factory()->create(['role' => 'admin', 'department_id' => null]);
+
+        $this->actingAs($staff)->post(route('receive.store'), [
+            'name'          => 'Fallback Widget',
+            'qty'           => 2,
+            'date_received' => now()->toDateString(),
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('notifications', ['user_id' => $admin1->id, 'type' => 'tx_submitted']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $admin2->id, 'type' => 'tx_submitted']);
+    }
+
+    public function test_head_self_submission_does_not_create_tx_submitted_notification(): void
+    {
+        $dept = $this->makeDept();
+        $head = $this->makeStaff($dept, isHead: true);
+
+        $this->actingAs($head)->post(route('receive.store'), [
+            'name'          => 'Head Widget',
+            'qty'           => 5,
+            'date_received' => now()->toDateString(),
+        ])->assertRedirect();
+
+        $this->assertDatabaseMissing('notifications', [
+            'type' => 'tx_submitted',
+        ]);
+    }
+
+    public function test_rejecting_release_notifies_submitter(): void
+    {
+        $dept  = $this->makeDept();
+        $staff = $this->makeStaff($dept);
+        $head  = $this->makeStaff($dept, isHead: true);
+        $item  = $this->makeItem($dept, 10);
+
+        $tx = Transaction::create([
+            'type'                  => 'released',
+            'item_id'               => $item->id,
+            'item_name_snapshot'    => $item->name,
+            'qty'                   => 3,
+            'unit'                  => 'pcs',
+            'released_to_office'    => 'ICU',
+            'receiver_name'         => 'Dr. Santos',
+            'released_by_user_id'   => $staff->id,
+            'department_id'         => $dept->id,
+            'head_approval_status'  => 'pending',
+        ]);
+
+        $this->actingAs($head)->patch(route('approvals.reject', $tx), [
+            'notes' => 'Not enough stock.',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $staff->id,
+            'type'    => 'tx_rejected',
+        ]);
+    }
 }
