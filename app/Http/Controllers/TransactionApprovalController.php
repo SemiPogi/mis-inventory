@@ -66,24 +66,22 @@ class TransactionApprovalController extends Controller
             ? $transaction->received_by_user_id
             : $transaction->released_by_user_id;
 
+        $notifType  = $transaction->type === 'received' ? 'tx_approved_receive' : 'tx_approved_release';
+        $notifTitle = $transaction->type === 'received'
+            ? 'Receive Approved — Collect from Supply'
+            : 'Release Approved';
+        $notifBody  = $transaction->type === 'received'
+            ? "Your receive request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved. Items have been added to inventory. Please collect from the Supply Department."
+            : "Your release request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved and inventory has been updated.";
+
         if ($submitterId) {
-            if ($transaction->type === 'received') {
-                Notification::notify(
-                    $submitterId,
-                    'tx_approved_receive',
-                    'Receive Approved — Collect from Supply',
-                    "Your receive request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved. Items have been added to inventory. Please collect from the Supply Department.",
-                    ['url' => route('transactions.show', $transaction)]
-                );
-            } else {
-                Notification::notify(
-                    $submitterId,
-                    'tx_approved_release',
-                    'Release Approved',
-                    "Your release request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved and inventory has been updated.",
-                    ['url' => route('transactions.show', $transaction)]
-                );
-            }
+            Notification::notify(
+                $submitterId,
+                $notifType,
+                $notifTitle,
+                $notifBody,
+                ['url' => route('transactions.show', $transaction)]
+            );
         }
 
         $successMsg = $transaction->type === 'received'

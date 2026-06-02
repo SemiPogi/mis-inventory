@@ -107,7 +107,7 @@ class TransactionNotificationTest extends TestCase
             'head_approval_status' => 'pending',
         ]);
 
-        $this->actingAs($head)->patch(route('approvals.approve', $tx));
+        $this->actingAs($head)->patch(route('approvals.approve', $tx))->assertRedirect();
 
         $this->assertDatabaseHas('notifications', [
             'user_id' => $staff->id,
@@ -135,7 +135,7 @@ class TransactionNotificationTest extends TestCase
             'head_approval_status'  => 'pending',
         ]);
 
-        $this->actingAs($head)->patch(route('approvals.approve', $tx));
+        $this->actingAs($head)->patch(route('approvals.approve', $tx))->assertRedirect();
 
         $this->assertDatabaseHas('notifications', [
             'user_id' => $staff->id,
