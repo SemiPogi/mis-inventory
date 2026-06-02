@@ -85,4 +85,61 @@ class TransactionNotificationTest extends TestCase
             'type'    => 'tx_submitted',
         ]);
     }
+
+    // ── tx_approved ────────────────────────────────────────────────────────
+
+    public function test_approving_receive_notifies_submitter(): void
+    {
+        $dept  = $this->makeDept();
+        $staff = $this->makeStaff($dept);
+        $head  = $this->makeStaff($dept, isHead: true);
+        $item  = $this->makeItem($dept, 0);
+
+        $tx = Transaction::create([
+            'type'                 => 'received',
+            'item_id'              => $item->id,
+            'item_name_snapshot'   => $item->name,
+            'qty'                  => 5,
+            'unit'                 => 'pcs',
+            'date_received'        => now()->toDateString(),
+            'received_by_user_id'  => $staff->id,
+            'department_id'        => $dept->id,
+            'head_approval_status' => 'pending',
+        ]);
+
+        $this->actingAs($head)->patch(route('approvals.approve', $tx));
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $staff->id,
+            'type'    => 'tx_approved_receive',
+        ]);
+    }
+
+    public function test_approving_release_notifies_submitter(): void
+    {
+        $dept  = $this->makeDept();
+        $staff = $this->makeStaff($dept);
+        $head  = $this->makeStaff($dept, isHead: true);
+        $item  = $this->makeItem($dept, 10);
+
+        $tx = Transaction::create([
+            'type'                  => 'released',
+            'item_id'               => $item->id,
+            'item_name_snapshot'    => $item->name,
+            'qty'                   => 3,
+            'unit'                  => 'pcs',
+            'released_to_office'    => 'ICU',
+            'receiver_name'         => 'Dr. Santos',
+            'released_by_user_id'   => $staff->id,
+            'department_id'         => $dept->id,
+            'head_approval_status'  => 'pending',
+        ]);
+
+        $this->actingAs($head)->patch(route('approvals.approve', $tx));
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $staff->id,
+            'type'    => 'tx_approved_release',
+        ]);
+    }
 }

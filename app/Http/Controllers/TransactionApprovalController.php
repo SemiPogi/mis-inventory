@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
 use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -60,6 +61,30 @@ class TransactionApprovalController extends Controller
         }
 
         $transaction->update($updates);
+
+        $submitterId = $transaction->type === 'received'
+            ? $transaction->received_by_user_id
+            : $transaction->released_by_user_id;
+
+        if ($submitterId) {
+            if ($transaction->type === 'received') {
+                Notification::notify(
+                    $submitterId,
+                    'tx_approved_receive',
+                    'Receive Approved — Collect from Supply',
+                    "Your receive request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved. Items have been added to inventory. Please collect from the Supply Department.",
+                    ['url' => route('transactions.show', $transaction)]
+                );
+            } else {
+                Notification::notify(
+                    $submitterId,
+                    'tx_approved_release',
+                    'Release Approved',
+                    "Your release request for {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" was approved and inventory has been updated.",
+                    ['url' => route('transactions.show', $transaction)]
+                );
+            }
+        }
 
         $successMsg = $transaction->type === 'received'
             ? "Approved — {$transaction->qty} {$transaction->unit} of \"{$transaction->item_name_snapshot}\" added to inventory."
