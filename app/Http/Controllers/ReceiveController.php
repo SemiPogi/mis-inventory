@@ -120,7 +120,7 @@ class ReceiveController extends Controller
             Notification::notify($head, 'tx_submitted', 'New Receive Submission', $message, ['url' => $txUrl]);
         } else {
             User::where('role', 'admin')->each(
-                fn ($admin) => Notification::notify($admin->id, 'tx_submitted', 'New Receive Submission', $message, ['url' => $txUrl])
+                fn ($admin) => Notification::notify($admin, 'tx_submitted', 'New Receive Submission', $message, ['url' => $txUrl])
             );
         }
 
