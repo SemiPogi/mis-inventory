@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Item;
 use App\Models\ItemCategory;
+use App\Models\Notification;
 use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class ReceiveController extends Controller
@@ -94,7 +96,7 @@ class ReceiveController extends Controller
             ]);
         }
 
-        Transaction::create([
+        $pendingTx = Transaction::create([
             'type'                  => 'received',
             'item_id'               => $item->id,
             'item_name_snapshot'    => $item->name,
@@ -109,6 +111,18 @@ class ReceiveController extends Controller
             'department_id'         => $deptId,
             'head_approval_status'  => 'pending',
         ]);
+
+        $txUrl   = route('transactions.show', $pendingTx);
+        $message = "{$user->name} submitted a receive request for {$request->qty} {$item->unit} of \"{$item->name}\" — awaiting your approval.";
+        $head    = User::where('is_head', true)->where('department_id', $deptId)->first();
+
+        if ($head) {
+            Notification::notify($head, 'tx_submitted', 'New Receive Submission', $message, ['url' => $txUrl]);
+        } else {
+            User::where('role', 'admin')->each(
+                fn ($admin) => Notification::notify($admin->id, 'tx_submitted', 'New Receive Submission', $message, ['url' => $txUrl])
+            );
+        }
 
         return redirect()->route('receive.index')
             ->with('success', 'Submitted for head approval. Inventory will update once approved.');
