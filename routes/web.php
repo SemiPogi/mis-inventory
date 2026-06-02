@@ -137,6 +137,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/approvals', [TransactionApprovalController::class, 'index'])->name('approvals.index');
         Route::patch('/approvals/{transaction}/approve', [TransactionApprovalController::class, 'approve'])->name('approvals.approve');
         Route::patch('/approvals/{transaction}/reject', [TransactionApprovalController::class, 'reject'])->name('approvals.reject');
+        Route::post('/approvals/bulk-approve', [TransactionApprovalController::class, 'bulkApprove'])->name('approvals.bulk-approve');
 
         // Self-service: cancel pending or resubmit rejected transaction
         Route::patch('/transactions/{transaction}/cancel',  [TransactionCancelController::class, 'cancel'])->name('transactions.cancel');
