@@ -64,4 +64,25 @@ class TransactionNotificationTest extends TestCase
             'type'    => 'tx_submitted',
         ]);
     }
+
+    public function test_release_submission_notifies_dept_head(): void
+    {
+        $dept  = $this->makeDept();
+        $staff = $this->makeStaff($dept);
+        $head  = $this->makeStaff($dept, isHead: true);
+        $item  = $this->makeItem($dept, 10);
+
+        $this->actingAs($staff)->post(route('release.store'), [
+            'item_id'            => $item->id,
+            'qty'                => 3,
+            'released_to_office' => 'ICU',
+            'receiver_name'      => 'Dr. Santos',
+            'date_released'      => now()->toDateString(),
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $head->id,
+            'type'    => 'tx_submitted',
+        ]);
+    }
 }

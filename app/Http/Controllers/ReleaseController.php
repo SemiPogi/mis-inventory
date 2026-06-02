@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Item;
+use App\Models\Notification;
 use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class ReleaseController extends Controller
@@ -73,7 +75,7 @@ class ReleaseController extends Controller
         }
 
         // Staff: do NOT decrement — leave for head to approve
-        Transaction::create([
+        $pendingTx = Transaction::create([
             'type'                  => 'released',
             'item_id'               => $item->id,
             'item_name_snapshot'    => $item->name,
@@ -85,11 +87,24 @@ class ReleaseController extends Controller
             'released_by_user_id'   => auth()->id(),
             'purpose'               => $request->purpose,
             'date_released'         => $request->date_released,
-            'acknowledgment_status' => null,
+            'acknowledgment_status' => 'pending',
             'remarks'               => $request->remarks,
-            'department_id'         => auth()->user()->department_id,
+            'department_id'         => $user->department_id,
             'head_approval_status'  => 'pending',
         ]);
+
+        $txUrl   = route('transactions.show', $pendingTx);
+        $deptId  = $user->department_id;
+        $message = "{$user->name} submitted a release request for {$request->qty} {$item->unit} of \"{$item->name}\" — awaiting your approval.";
+        $head    = User::where('is_head', true)->where('department_id', $deptId)->first();
+
+        if ($head) {
+            Notification::notify($head, 'tx_submitted', 'New Release Submission', $message, ['url' => $txUrl]);
+        } else {
+            User::where('role', 'admin')->each(
+                fn ($admin) => Notification::notify($admin, 'tx_submitted', 'New Release Submission', $message, ['url' => $txUrl])
+            );
+        }
 
         return redirect()->route('release.index')
             ->with('success', 'Release submitted for head approval. Inventory will update once approved.');
