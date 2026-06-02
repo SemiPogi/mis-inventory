@@ -1,24 +1,10 @@
 <x-app-layout>
     <x-page-header title="Approvals" subtitle="Pending receive and release requests awaiting your approval"/>
 
-    @if(session('success'))
-        <div class="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            <x-heroicon-o-check-circle class="w-5 h-5 shrink-0 text-emerald-500"/>
-            {{ session('success') }}
-        </div>
-    @endif
-
     @if(session('warning'))
         <div class="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             <x-heroicon-o-exclamation-triangle class="w-5 h-5 shrink-0 text-amber-500"/>
             {{ session('warning') }}
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <x-heroicon-o-x-circle class="w-5 h-5 shrink-0 text-red-500"/>
-            {{ session('error') }}
         </div>
     @endif
 
@@ -37,6 +23,8 @@
         </div>
     @endif
 
+    <div x-data="approvalManager()" :class="selected.length > 0 ? 'pb-24' : ''">
+
     {{-- Bulk-approve form (hidden; inputs injected by Alpine) --}}
     <form x-ref="bulkForm" method="POST" action="{{ route('approvals.bulk-approve') }}" class="hidden">
         @csrf
@@ -44,8 +32,6 @@
             <input type="hidden" name="ids[]" :value="id">
         </template>
     </form>
-
-    <div x-data="approvalManager()">
 
     {{-- ── Pending Receives ─────────────────────────────────────── --}}
     @php $receiveIds = $pendingReceives->pluck('id')->all(); @endphp
@@ -68,6 +54,7 @@
                                 <input type="checkbox"
                                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                                        :checked="allSelected({{ json_encode($receiveIds) }})"
+                                       x-effect="$el.indeterminate = {{ json_encode($receiveIds) }}.some(id => selected.includes(id)) && !{{ json_encode($receiveIds) }}.every(id => selected.includes(id))"
                                        @change="$event.target.checked ? selectAll({{ json_encode($receiveIds) }}) : deselectAll({{ json_encode($receiveIds) }})">
                             </th>
                             <th class="text-left px-6 py-3 text-xs font-medium text-ink-muted uppercase tracking-wide">Item</th>
@@ -154,6 +141,7 @@
                                 <input type="checkbox"
                                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                                        :checked="allSelected({{ json_encode($releaseIds) }})"
+                                       x-effect="$el.indeterminate = {{ json_encode($releaseIds) }}.some(id => selected.includes(id)) && !{{ json_encode($releaseIds) }}.every(id => selected.includes(id))"
                                        @change="$event.target.checked ? selectAll({{ json_encode($releaseIds) }}) : deselectAll({{ json_encode($releaseIds) }})">
                             </th>
                             <th class="text-left px-6 py-3 text-xs font-medium text-ink-muted uppercase tracking-wide">Item</th>
