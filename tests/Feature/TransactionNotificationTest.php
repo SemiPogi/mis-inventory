@@ -142,4 +142,35 @@ class TransactionNotificationTest extends TestCase
             'type'    => 'tx_approved_release',
         ]);
     }
+
+    // ── tx_rejected ────────────────────────────────────────────────────────
+
+    public function test_rejecting_transaction_notifies_submitter(): void
+    {
+        $dept  = $this->makeDept();
+        $staff = $this->makeStaff($dept);
+        $head  = $this->makeStaff($dept, isHead: true);
+        $item  = $this->makeItem($dept, 0);
+
+        $tx = Transaction::create([
+            'type'                 => 'received',
+            'item_id'              => $item->id,
+            'item_name_snapshot'   => $item->name,
+            'qty'                  => 5,
+            'unit'                 => 'pcs',
+            'date_received'        => now()->toDateString(),
+            'received_by_user_id'  => $staff->id,
+            'department_id'        => $dept->id,
+            'head_approval_status' => 'pending',
+        ]);
+
+        $this->actingAs($head)->patch(route('approvals.reject', $tx), [
+            'notes' => 'Wrong quantity, please correct.',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $staff->id,
+            'type'    => 'tx_rejected',
+        ]);
+    }
 }

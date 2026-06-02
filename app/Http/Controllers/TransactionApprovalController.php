@@ -109,6 +109,22 @@ class TransactionApprovalController extends Controller
             'head_rejection_notes' => $request->notes,
         ]);
 
+        $submitterId = $transaction->type === 'received'
+            ? $transaction->received_by_user_id
+            : $transaction->released_by_user_id;
+
+        $txKind = $transaction->type === 'received' ? 'receive' : 'release';
+
+        if ($submitterId) {
+            Notification::notify(
+                $submitterId,
+                'tx_rejected',
+                'Request Rejected',
+                "Your {$txKind} request for \"{$transaction->item_name_snapshot}\" was rejected. Reason: {$request->notes}",
+                ['url' => route('transactions.show', $transaction)]
+            );
+        }
+
         return redirect()->route('approvals.index')
             ->with('success', 'Transaction rejected.');
     }
