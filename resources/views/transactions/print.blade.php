@@ -45,7 +45,7 @@
             padding: 6px 0 4px;
         }
         .doc-title .sub  { font-size: 8.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-        .doc-title .main { font-size: 12pt;  font-weight: bold; letter-spacing: 1px; }
+        .doc-title .main { font-size: 12pt;  font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
 
         /* ── Info block ── */
         .info-table {
@@ -55,7 +55,7 @@
             margin-top: 4px;
         }
         .info-table td {
-            padding: 4px 6px;
+            padding: 3px 6px;
             border-right: 1px solid #000;
             font-size: 8.5pt;
             vertical-align: top;
@@ -72,6 +72,7 @@
             width: 100%;
             border-collapse: collapse;
             border: 1px solid #000;
+            border-top: none;
             margin-top: 6px;
         }
         .items-table th {
@@ -261,7 +262,7 @@
                                     <div class="sig-name">{{ strtoupper($transaction->receivedBy->name) }}</div>
                                 </div>
                                 <div class="sig-date">
-                                    Date: {{ $transaction->created_at->format('M d, Y') }}
+                                    Date: {{ $transaction->created_at?->format('M d, Y') ?? '—' }}
                                 </div>
                             @else
                                 <span class="sig-space"></span>
@@ -370,7 +371,7 @@
                                     <div class="sig-name">{{ strtoupper($transaction->releasedBy->name) }}</div>
                                 </div>
                                 <div class="sig-date">
-                                    Date: {{ $transaction->created_at->format('M d, Y') }}
+                                    Date: {{ $transaction->created_at?->format('M d, Y') ?? '—' }}
                                 </div>
                             @else
                                 <span class="sig-space"></span>
@@ -404,7 +405,7 @@
             <div class="form-code">
                 <span>Transaction #{{ $transaction->id }}</span>
                 <span>
-                    Status: {{ ucfirst($transaction->head_approval_status) }}
+                    Status: {{ ucfirst($transaction->head_approval_status ?? 'pending') }}
                     &nbsp;|&nbsp;
                     Printed: {{ now()->format('M d, Y g:i A') }}
                 </span>
