@@ -123,6 +123,13 @@ class DashboardController extends Controller
             ->limit(8)
             ->get();
 
+        $lowStockItems = Item::where('min_stock_qty', '>', 0)
+            ->whereColumn('current_qty', '<=', 'min_stock_qty')
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->orderBy('current_qty')
+            ->limit(8)
+            ->get();
+
         return view('dashboard', compact(
             'totalInStock',
             'totalReleased',
@@ -138,6 +145,7 @@ class DashboardController extends Controller
             'pcPendingSettle',
             'recentVouchers',
             'expiringItems',
+            'lowStockItems',
             'pendingApprovalCount',
             'myPendingCount',
         ));

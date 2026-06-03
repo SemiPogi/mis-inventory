@@ -114,6 +114,38 @@
     </x-bento-card>
     @endif
 
+    {{-- Low Stock Alert --}}
+    @if($lowStockItems->isNotEmpty())
+    <x-bento-card :padded="false" class="mb-4">
+        <div class="px-6 py-4 border-b border-surface-border flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <x-heroicon-o-arrow-trending-down class="w-4 h-4 text-amber-500"/>
+                <h2 class="text-sm font-semibold text-ink-heading">Low Stock Alerts</h2>
+            </div>
+            <a href="{{ route('items.index') }}" class="text-xs font-medium text-primary-600 hover:text-primary-700">View all items</a>
+        </div>
+        <x-table :headers="['Item', 'Category', 'Current Stock', 'Min Stock', 'Status']">
+            @foreach($lowStockItems as $ls)
+                <x-table.row>
+                    <td class="px-6 py-3 font-medium text-ink-heading">
+                        <a href="{{ route('items.show', $ls) }}" class="hover:text-primary-600">{{ $ls->name }}</a>
+                    </td>
+                    <td class="px-6 py-3 text-sm text-ink-muted">{{ $ls->category ?? '—' }}</td>
+                    <td class="px-6 py-3 text-sm text-ink-body">{{ $ls->current_qty }} {{ $ls->unit }}</td>
+                    <td class="px-6 py-3 text-sm text-ink-muted">{{ $ls->min_stock_qty }} {{ $ls->unit }}</td>
+                    <td class="px-6 py-3">
+                        @if($ls->current_qty === 0)
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">Out of Stock</span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Low Stock</span>
+                        @endif
+                    </td>
+                </x-table.row>
+            @endforeach
+        </x-table>
+    </x-bento-card>
+    @endif
+
     {{-- Row 3: Petty Cash tiles --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <x-stat-tile label="Petty Cash This Month" :value="'₱' . number_format($pcThisMonth, 2)" icon="banknotes" color="amber" />

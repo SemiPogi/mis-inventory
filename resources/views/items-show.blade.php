@@ -8,10 +8,15 @@
     <x-page-header :title="$item->name"
                    :subtitle="trim(($item->brand ?? '') . ' ' . ($item->model_number ? '— ' . $item->model_number : '')) ?: null">
         <x-slot:actions>
-            @if($item->current_qty > 0)
-                <x-status-badge status="acknowledged">{{ $item->current_qty }} {{ $item->unit }} in stock</x-status-badge>
-            @else
+            @if($item->current_qty === 0)
                 <x-status-badge status="pending">Out of stock</x-status-badge>
+            @elseif($item->isBelowMinStock())
+                <x-status-badge status="released">{{ $item->current_qty }} {{ $item->unit }} in stock</x-status-badge>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                    Low Stock
+                </span>
+            @else
+                <x-status-badge status="acknowledged">{{ $item->current_qty }} {{ $item->unit }} in stock</x-status-badge>
             @endif
         </x-slot:actions>
     </x-page-header>
