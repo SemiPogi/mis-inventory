@@ -262,4 +262,23 @@ class AuditLogTest extends TestCase
             'qty_change' => -2,
         ]);
     }
+
+    /** @test */
+    public function test_items_show_displays_audit_log_entries(): void
+    {
+        $dept  = $this->makeDept();
+        $admin = $this->makeAdmin();
+        $item  = $this->makeItem($dept, qty: 100);
+
+        $this->actingAs($admin);
+        ItemLog::record($item, 'approved_receive', 10, 90, 'Transaction #7');
+        ItemLog::record($item, 'approved_release', -3, 100, 'Transaction #8');
+
+        $this->actingAs($admin)
+            ->get(route('items.show', $item))
+            ->assertOk()
+            ->assertSee('approved_receive')
+            ->assertSee('approved_release')
+            ->assertSee('Audit Log');
+    }
 }

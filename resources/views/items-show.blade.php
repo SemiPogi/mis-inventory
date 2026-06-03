@@ -112,4 +112,52 @@
             </x-table>
         @endif
     </x-bento-card>
+
+    {{-- Audit Log --}}
+    <x-bento-card :padded="false" class="mt-4">
+        <div class="px-6 py-4 border-b border-surface-border">
+            <h2 class="text-sm font-semibold text-ink-heading">Audit Log</h2>
+        </div>
+        @if($logs->isEmpty())
+            <x-empty-state icon="clipboard-document-list" title="No audit entries yet" hint="Quantity changes will appear here once inventory is updated."/>
+        @else
+            <div class="divide-y divide-surface-border">
+                @foreach($logs as $log)
+                    @php
+                        $isPositive = $log->qty_change > 0;
+                        $isZero     = $log->qty_change === 0;
+                        $actionIcon = match($log->action) {
+                            'approved_receive' => '✅',
+                            'approved_release' => '📤',
+                            'cancelled'        => '🚫',
+                            'rejected'         => '❌',
+                            default            => '📋',
+                        };
+                        $changeLabel = $isZero
+                            ? '±0 ' . $item->unit
+                            : ($isPositive ? '+' : '') . $log->qty_change . ' ' . $item->unit;
+                    @endphp
+                    <div class="px-6 py-3 flex items-center gap-4 text-sm">
+                        <span class="text-base w-5 shrink-0">{{ $actionIcon }}</span>
+                        <span class="font-medium text-ink-heading w-36 shrink-0">{{ $log->action }}</span>
+                        <span class="{{ $isPositive ? 'text-emerald-600' : ($isZero ? 'text-ink-muted' : 'text-rose-600') }} font-medium w-20 shrink-0">
+                            {{ $changeLabel }}
+                        </span>
+                        <span class="text-ink-muted w-32 shrink-0">
+                            {{ $log->qty_before }} → {{ $log->qty_after }}
+                        </span>
+                        <span class="text-ink-muted shrink-0">
+                            {{ $log->created_at?->format('M d, Y') ?? '—' }}
+                        </span>
+                        <span class="text-ink-muted shrink-0">
+                            {{ $log->user?->name ?? '—' }}
+                        </span>
+                        @if($log->note)
+                            <span class="text-ink-muted text-xs truncate">{{ $log->note }}</span>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </x-bento-card>
 </x-app-layout>

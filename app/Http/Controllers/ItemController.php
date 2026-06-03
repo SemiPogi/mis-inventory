@@ -45,8 +45,9 @@ class ItemController extends Controller
             abort(403);
         }
         $transactions = $item->transactions()->latest()->get();
-        $movement30 = $this->movement30($item);
-        return view('items-show', compact('item', 'transactions', 'movement30'));
+        $movement30   = $this->movement30($item);
+        $logs         = $item->logs()->with('user')->get();
+        return view('items-show', compact('item', 'transactions', 'movement30', 'logs'));
     }
 
     private function movement30(Item $item): array
