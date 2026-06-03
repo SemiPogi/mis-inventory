@@ -15,6 +15,14 @@
     <x-page-header :title="$transaction->item_name_snapshot"
                    :subtitle="'Transaction #' . $transaction->id">
         <x-slot:actions>
+            {{-- Print button --}}
+            <a href="{{ route('transactions.print', $transaction) }}"
+               target="_blank"
+               class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold px-3 py-2 transition">
+                <x-heroicon-o-printer class="w-4 h-4"/>
+                Print Slip
+            </a>
+
             {{-- Status badge --}}
             @if($transaction->isCancelled())
                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
