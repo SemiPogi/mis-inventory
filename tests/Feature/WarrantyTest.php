@@ -101,4 +101,34 @@ class WarrantyTest extends TestCase
         ]);
         $this->assertEquals('expiring-soon', $item->warrantyStatus());
     }
+
+    /** @test */
+    public function test_receive_store_saves_warranty_fields_for_new_item(): void
+    {
+        $dept  = $this->makeDept();
+        $admin = \App\Models\User::factory()->create([
+            'role'          => 'admin',
+            'department_id' => $dept->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('receive.store'), [
+                'name'                  => 'HP Laptop',
+                'qty'                   => 1,
+                'unit'                  => 'unit',
+                'date_received'         => now()->toDateString(),
+                'warranty_provider'     => 'HP Philippines',
+                'warranty_reference_no' => 'WR-2024-001',
+                'warranty_expiry_date'  => now()->addYears(2)->toDateString(),
+                'warranty_notes'        => 'Parts and labor',
+            ])
+            ->assertRedirect();
+
+        $item = \App\Models\Item::where('name', 'HP Laptop')->first();
+        $this->assertNotNull($item);
+        $this->assertEquals('HP Philippines', $item->warranty_provider);
+        $this->assertEquals('WR-2024-001', $item->warranty_reference_no);
+        $this->assertNotNull($item->warranty_expiry_date);
+        $this->assertEquals('Parts and labor', $item->warranty_notes);
+    }
 }

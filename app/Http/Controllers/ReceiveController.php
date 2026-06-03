@@ -44,17 +44,21 @@ class ReceiveController extends Controller
                 $item->save();
             } else {
                 $item = Item::create([
-                    'name'               => $request->name,
-                    'category'           => $request->category,
-                    'brand'              => $request->brand,
-                    'model_number'       => $request->model_number,
-                    'serial_number'      => $request->serial_number,
-                    'unit'               => $request->unit ?? 'pcs',
-                    'total_qty_received' => $request->qty,
-                    'current_qty'        => $request->qty,
-                    'created_by'         => auth()->id(),
-                    'department_id'      => $deptId,
-                    'expiry_date'        => $request->expiry_date ?? null,
+                    'name'                  => $request->name,
+                    'category'              => $request->category,
+                    'brand'                 => $request->brand,
+                    'model_number'          => $request->model_number,
+                    'serial_number'         => $request->serial_number,
+                    'unit'                  => $request->unit ?? 'pcs',
+                    'total_qty_received'    => $request->qty,
+                    'current_qty'           => $request->qty,
+                    'created_by'            => auth()->id(),
+                    'department_id'         => $deptId,
+                    'expiry_date'           => $request->expiry_date ?? null,
+                    'warranty_expiry_date'  => $request->warranty_expiry_date ?? null,
+                    'warranty_provider'     => $request->warranty_provider ?? null,
+                    'warranty_reference_no' => $request->warranty_reference_no ?? null,
+                    'warranty_notes'        => $request->warranty_notes ?? null,
                 ]);
                 $qtyBefore = 0;
             }
@@ -87,17 +91,21 @@ class ReceiveController extends Controller
         // then create a pending transaction — inventory updated only after head approves.
         if (! $item) {
             $item = Item::create([
-                'name'               => $request->name,
-                'category'           => $request->category,
-                'brand'              => $request->brand,
-                'model_number'       => $request->model_number,
-                'serial_number'      => $request->serial_number,
-                'unit'               => $request->unit ?? 'pcs',
-                'total_qty_received' => 0,
-                'current_qty'        => 0,
-                'created_by'         => auth()->id(),
-                'department_id'      => $deptId,
-                'expiry_date'        => $request->expiry_date ?? null,
+                'name'                  => $request->name,
+                'category'              => $request->category,
+                'brand'                 => $request->brand,
+                'model_number'          => $request->model_number,
+                'serial_number'         => $request->serial_number,
+                'unit'                  => $request->unit ?? 'pcs',
+                'total_qty_received'    => 0,
+                'current_qty'           => 0,
+                'created_by'            => auth()->id(),
+                'department_id'         => $deptId,
+                'expiry_date'           => $request->expiry_date ?? null,
+                'warranty_expiry_date'  => $request->warranty_expiry_date ?? null,
+                'warranty_provider'     => $request->warranty_provider ?? null,
+                'warranty_reference_no' => $request->warranty_reference_no ?? null,
+                'warranty_notes'        => $request->warranty_notes ?? null,
             ]);
         }
 

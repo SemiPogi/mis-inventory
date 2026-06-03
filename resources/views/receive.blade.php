@@ -114,6 +114,43 @@
                 </div>
             </div>
 
+            {{-- Warranty Information (collapsible) --}}
+            <div x-data="{ open: false }" class="mb-6">
+                <button type="button" @click="open = !open"
+                        class="flex items-center gap-2 text-sm font-semibold text-ink-heading mb-2">
+                    <x-heroicon-o-shield-check class="w-4 h-4 text-ink-muted"/>
+                    Warranty Information
+                    <x-heroicon-o-chevron-down class="w-4 h-4 text-ink-muted transition-transform duration-200"
+                                               :style="open ? 'transform:rotate(180deg)' : ''"/>
+                    <span class="text-xs text-ink-muted font-normal">(optional)</span>
+                </button>
+                <div x-show="open" style="display:none">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <x-label for="warranty_provider">Warranty Provider</x-label>
+                            <x-input id="warranty_provider" name="warranty_provider"
+                                     :value="old('warranty_provider')"
+                                     placeholder="e.g. Samsung Philippines"/>
+                        </div>
+                        <div>
+                            <x-label for="warranty_reference_no">Warranty Reference No.</x-label>
+                            <x-input id="warranty_reference_no" name="warranty_reference_no"
+                                     :value="old('warranty_reference_no')"
+                                     placeholder="e.g. WR-2024-001234"/>
+                        </div>
+                        <div>
+                            <x-label for="warranty_expiry_date">Warranty Expiry Date</x-label>
+                            <x-input id="warranty_expiry_date" name="warranty_expiry_date"
+                                     type="date" :value="old('warranty_expiry_date')"/>
+                        </div>
+                        <div class="md:col-span-2">
+                            <x-label for="warranty_notes">Coverage Notes</x-label>
+                            <x-textarea id="warranty_notes" name="warranty_notes">{{ old('warranty_notes') }}</x-textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="flex gap-3">
                 <x-button type="submit" variant="primary">
                     <x-heroicon-o-arrow-down-tray class="w-4 h-4"/>
