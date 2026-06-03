@@ -39,6 +39,11 @@ class Item extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function logs()
+    {
+        return $this->hasMany(ItemLog::class)->latest('created_at')->latest('id');
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
