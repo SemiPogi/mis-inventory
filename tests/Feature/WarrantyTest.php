@@ -128,7 +128,7 @@ class WarrantyTest extends TestCase
         $this->assertNotNull($item);
         $this->assertEquals('HP Philippines', $item->warranty_provider);
         $this->assertEquals('WR-2024-001', $item->warranty_reference_no);
-        $this->assertNotNull($item->warranty_expiry_date);
+        $this->assertEquals(now()->addYears(2)->toDateString(), $item->warranty_expiry_date->toDateString());
         $this->assertEquals('Parts and labor', $item->warranty_notes);
     }
 }
