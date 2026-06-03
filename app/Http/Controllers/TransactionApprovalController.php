@@ -170,12 +170,11 @@ class TransactionApprovalController extends Controller
                 $item->total_qty_received += $transaction->qty;
                 $item->current_qty        += $transaction->qty;
 
-                DB::transaction(function () use ($item, $transaction, $updates) {
+                DB::transaction(function () use ($item, $transaction, $updates, $qtyBefore) {
                     $item->save();
                     $transaction->update($updates);
+                    ItemLog::record($item, 'approved_receive', $transaction->qty, $qtyBefore, "Transaction #{$transaction->id} (bulk)");
                 });
-
-                ItemLog::record($item, 'approved_receive', $transaction->qty, $qtyBefore, "Transaction #{$transaction->id} (bulk)");
             } elseif ($transaction->type === 'released') {
                 if ($item->current_qty < $transaction->qty) {
                     $failed[] = "\"{$transaction->item_name_snapshot}\": insufficient stock ({$item->current_qty} {$item->unit} available)";
@@ -185,12 +184,11 @@ class TransactionApprovalController extends Controller
                 $item->current_qty -= $transaction->qty;
                 $updates['acknowledgment_status'] = 'pending';
 
-                DB::transaction(function () use ($item, $transaction, $updates) {
+                DB::transaction(function () use ($item, $transaction, $updates, $qtyBefore) {
                     $item->save();
                     $transaction->update($updates);
+                    ItemLog::record($item, 'approved_release', -$transaction->qty, $qtyBefore, "Transaction #{$transaction->id} (bulk)");
                 });
-
-                ItemLog::record($item, 'approved_release', -$transaction->qty, $qtyBefore, "Transaction #{$transaction->id} (bulk)");
             }
 
             $this->notifyApproval($transaction);

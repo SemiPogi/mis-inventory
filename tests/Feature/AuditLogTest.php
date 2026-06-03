@@ -234,4 +234,32 @@ class AuditLogTest extends TestCase
         $this->assertEquals('approved_release', $log->action);
         $this->assertEquals(-3, $log->qty_change);
     }
+
+    /** @test */
+    public function test_bulk_approve_receive_and_release_write_log_entries(): void
+    {
+        $dept  = $this->makeDept();
+        $head  = $this->makeHead($dept);
+        $staff = $this->makeStaff($dept);
+        $item1 = $this->makeItem($dept, qty: 10);
+        $item2 = $this->makeItem($dept, qty: 10);
+        $tx1   = $this->makeReceiveTx($item1, $staff);  // qty: 3
+        $tx2   = $this->makeReleaseTx($item2, $staff);  // qty: 2
+
+        $this->actingAs($head)
+            ->post(route('approvals.bulk-approve'), [
+                'ids' => [$tx1->id, $tx2->id],
+            ]);
+
+        $this->assertDatabaseHas('item_logs', [
+            'item_id'    => $item1->id,
+            'action'     => 'approved_receive',
+            'qty_change' => 3,
+        ]);
+        $this->assertDatabaseHas('item_logs', [
+            'item_id'    => $item2->id,
+            'action'     => 'approved_release',
+            'qty_change' => -2,
+        ]);
+    }
 }
