@@ -130,6 +130,13 @@ class DashboardController extends Controller
             ->limit(8)
             ->get();
 
+        $warrantyItems = Item::whereNotNull('warranty_expiry_date')
+            ->where('warranty_expiry_date', '<=', Carbon::today()->addDays(90))
+            ->when($scope, fn($q) => $q->where('department_id', $scope))
+            ->orderBy('warranty_expiry_date')
+            ->limit(8)
+            ->get();
+
         return view('dashboard', compact(
             'totalInStock',
             'totalReleased',
@@ -146,6 +153,7 @@ class DashboardController extends Controller
             'recentVouchers',
             'expiringItems',
             'lowStockItems',
+            'warrantyItems',
             'pendingApprovalCount',
             'myPendingCount',
         ));

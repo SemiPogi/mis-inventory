@@ -161,4 +161,34 @@ class WarrantyTest extends TestCase
             ->assertOk()
             ->assertDontSee('Warranty Provider');
     }
+
+    /** @test */
+    public function test_dashboard_shows_warranty_expiring_items(): void
+    {
+        $dept  = $this->makeDept();
+        $admin = \App\Models\User::factory()->create(['role' => 'admin']);
+        $item  = $this->makeItem($dept, [
+            'warranty_expiry_date' => now()->addDays(30)->toDateString(), // within 90 days
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee($item->name)
+            ->assertSee('Warranty Alerts');
+    }
+
+    /** @test */
+    public function test_dashboard_hides_warranty_alerts_when_no_expiring_items(): void
+    {
+        $dept  = $this->makeDept();
+        $admin = \App\Models\User::factory()->create(['role' => 'admin']);
+        // Item with no warranty date — should NOT trigger alerts
+        $this->makeItem($dept);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee('Warranty Alerts');
+    }
 }
