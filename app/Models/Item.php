@@ -27,7 +27,10 @@ class Item extends Model
     protected function casts(): array
     {
         return [
-            'expiry_date' => 'date',
+            'expiry_date'        => 'date',
+            'current_qty'        => 'integer',
+            'min_stock_qty'      => 'integer',
+            'total_qty_received' => 'integer',
         ];
     }
 
