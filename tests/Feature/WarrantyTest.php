@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Department;
 use App\Models\Item;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -81,5 +80,25 @@ class WarrantyTest extends TestCase
             'warranty_expiry_date' => now()->addDays(91)->toDateString(),
         ]);
         $this->assertEquals('active', $item->warrantyStatus());
+    }
+
+    /** @test */
+    public function test_warranty_status_returns_expiring_at_exactly_30_days(): void
+    {
+        $dept = $this->makeDept();
+        $item = $this->makeItem($dept, [
+            'warranty_expiry_date' => now()->addDays(30)->toDateString(),
+        ]);
+        $this->assertEquals('expiring', $item->warrantyStatus());
+    }
+
+    /** @test */
+    public function test_warranty_status_returns_expiring_soon_at_exactly_90_days(): void
+    {
+        $dept = $this->makeDept();
+        $item = $this->makeItem($dept, [
+            'warranty_expiry_date' => now()->addDays(90)->toDateString(),
+        ]);
+        $this->assertEquals('expiring-soon', $item->warrantyStatus());
     }
 }
