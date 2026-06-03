@@ -22,6 +22,7 @@ use App\Http\Controllers\TransactionCancelController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ItemCategoryController;
+use App\Http\Controllers\TransactionPrintController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -56,6 +57,7 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/acknowledge/{transaction}', [AcknowledgeController::class, 'update'])->name('acknowledge.update');
         Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
         Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
+        Route::get('/transactions/{transaction}/print', [TransactionPrintController::class, 'show'])->name('transactions.print');
         Route::get('/items', [ItemController::class, 'index'])->name('items.index');
         Route::get('/items/{item}', [ItemController::class, 'show'])->name('items.show');
 
