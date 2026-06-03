@@ -97,6 +97,7 @@ class DashboardAlertsTabTest extends TestCase
         $this->actingAs($admin)
             ->get(route('dashboard'))
             ->assertOk()
+            ->assertDontSee('Alerts')
             ->assertDontSee('Expiry (')
             ->assertDontSee('Low Stock (')
             ->assertDontSee('Warranty (');
