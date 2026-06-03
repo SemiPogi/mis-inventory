@@ -23,15 +23,20 @@ class Item extends Model
         'department_id',
         'expiry_date',
         'min_stock_qty',
+        'warranty_expiry_date',
+        'warranty_provider',
+        'warranty_reference_no',
+        'warranty_notes',
     ];
 
     protected function casts(): array
     {
         return [
-            'expiry_date'        => 'date',
-            'current_qty'        => 'integer',
-            'min_stock_qty'      => 'integer',
-            'total_qty_received' => 'integer',
+            'expiry_date'          => 'date',
+            'warranty_expiry_date' => 'date',
+            'current_qty'          => 'integer',
+            'min_stock_qty'        => 'integer',
+            'total_qty_received'   => 'integer',
         ];
     }
 
@@ -79,5 +84,23 @@ class Item extends Model
         if ($this->isExpired())         return 'expired';
         if ($this->isExpiringSoon())    return 'soon';
         return 'ok';
+    }
+
+    /**
+     * Warranty status badge: 'expired' | 'expiring' | 'expiring-soon' | 'active' | null
+     *
+     * expired       = past expiry
+     * expiring      = within 30 days  (red)
+     * expiring-soon = 31–90 days      (amber)
+     * active        = more than 90 days (green)
+     */
+    public function warrantyStatus(): ?string
+    {
+        if (! $this->warranty_expiry_date) return null;
+        $days = now()->diffInDays($this->warranty_expiry_date, false);
+        if ($days < 0)   return 'expired';
+        if ($days <= 30) return 'expiring';
+        if ($days <= 90) return 'expiring-soon';
+        return 'active';
     }
 }
