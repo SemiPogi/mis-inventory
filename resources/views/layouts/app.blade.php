@@ -15,14 +15,6 @@
 
 @php
     $user = auth()->user();
-    $nav = [
-        ['route' => 'dashboard',          'label' => 'Dashboard',    'icon' => 'home',                    'match' => '/'],
-        ['route' => 'receive.index',      'label' => 'Receive',      'icon' => 'arrow-down-tray',         'match' => 'receive'],
-        ['route' => 'release.index',      'label' => 'Release',      'icon' => 'arrow-up-tray',           'match' => 'release'],
-        ['route' => 'acknowledge.index',  'label' => 'Acknowledge',  'icon' => 'check-circle',            'match' => 'acknowledge'],
-        ['route' => 'transactions.index', 'label' => 'Transactions', 'icon' => 'clipboard-document-list', 'match' => 'transactions*'],
-        ['route' => 'items.index',        'label' => 'Inventory',    'icon' => 'cube',                    'match' => 'items*'],
-    ];
 
     $pcBadge = 0;
     if ($user->canCreateVoucher()) {
@@ -77,9 +69,19 @@
             ->whereColumn('current_qty', '<', 'min_stock_qty')
             ->count();
     }
+
+    $combinedApprovalBadge = $approvalBadge + $risHeadBadge + $transferHeadBadge;
 @endphp
 
-<div class="flex min-h-screen" x-data="{ collapsed: localStorage.getItem('sidebar-collapsed') === '1' }">
+<div class="flex min-h-screen" x-data="{
+    collapsed:    localStorage.getItem('sidebar-collapsed') === '1',
+    sInventory:   localStorage.getItem('nav-inventory')    !== '0',
+    sApprovals:   localStorage.getItem('nav-approvals')    !== '0',
+    sRequisitions:localStorage.getItem('nav-requisitions') !== '0',
+    sOperations:  localStorage.getItem('nav-operations')   !== '0',
+    sFinance:     localStorage.getItem('nav-finance')      !== '0',
+    sAdmin:       localStorage.getItem('nav-admin')        !== '0',
+}">
 
     {{-- Sidebar --}}
     <aside :class="collapsed ? 'w-20' : 'w-64'"
@@ -96,252 +98,333 @@
             </button>
         </div>
 
-        <nav class="flex-1 px-3 py-4 space-y-1">
-            @foreach($nav as $item)
-                @php $active = request()->is($item['match']); @endphp
-                <a href="{{ route($item['route']) }}"
-                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                          {{ $active
-                                ? 'bg-primary-50 text-primary-700 font-medium'
-                                : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                    @if($active)
-                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                    @endif
-                    <x-dynamic-component :component="'heroicon-o-' . $item['icon']" class="w-5 h-5 shrink-0"/>
-                    <span x-show="!collapsed" x-transition.opacity>{{ $item['label'] }}</span>
-                </a>
-            @endforeach
+        <nav class="flex-1 px-3 py-4">
 
-            {{-- Petty Cash (all roles) --}}
-            @php $pcActive = request()->is('petty-cash*'); @endphp
-            <a href="{{ route('petty-cash.index') }}"
-               class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                      {{ $pcActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                @if($pcActive)
-                    <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                @endif
-                <span class="relative shrink-0">
-                    <x-heroicon-o-banknotes class="w-5 h-5"/>
-                    @if($pcBadge > 0)
-                        <span class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
-                            {{ $pcBadge > 9 ? '9+' : $pcBadge }}
-                        </span>
-                    @endif
-                </span>
-                <span x-show="!collapsed" x-transition.opacity>Petty Cash</span>
+            {{-- Dashboard — always visible, no section header --}}
+            @php $active = request()->is('/'); @endphp
+            <a href="{{ route('dashboard') }}"
+               class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition mb-1
+                      {{ $active ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+               title="Dashboard">
+                @if($active)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                <x-heroicon-o-home class="w-5 h-5 shrink-0"/>
+                <span x-show="!collapsed" x-transition.opacity>Dashboard</span>
             </a>
 
-            {{-- ── RIS section ── --}}
-            @php $risActive = request()->is('ris*') || request()->is('ris-head*') || request()->is('ris-supply*'); @endphp
-            @if($risActive)
-                <div x-show="!collapsed" x-transition.opacity class="pt-2 pb-1 px-3">
-                    <p class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Requisitions</p>
+            {{-- ── INVENTORY ── --}}
+            <div class="mt-2">
+                <button x-show="!collapsed"
+                        @click="sInventory = !sInventory; localStorage.setItem('nav-inventory', sInventory ? '1' : '0')"
+                        class="flex items-center justify-between w-full px-3 py-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider hover:text-ink-heading transition">
+                    <span>Inventory</span>
+                    <span :class="{ '-rotate-90': !sInventory }" class="transition-transform inline-flex"><x-heroicon-o-chevron-down class="w-3 h-3"/></span>
+                </button>
+                <div x-show="collapsed" class="border-t border-surface-border mx-2 my-1.5"></div>
+                <div x-show="collapsed || sInventory" class="space-y-0.5 mt-0.5">
+                    @php $active = request()->is('receive*'); @endphp
+                    <a href="{{ route('receive.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $active ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="Receive">
+                        @if($active)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <x-heroicon-o-arrow-down-tray class="w-5 h-5 shrink-0"/>
+                        <span x-show="!collapsed" x-transition.opacity>Receive</span>
+                    </a>
+                    @php $active = request()->is('release*'); @endphp
+                    <a href="{{ route('release.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $active ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="Release">
+                        @if($active)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <x-heroicon-o-arrow-up-tray class="w-5 h-5 shrink-0"/>
+                        <span x-show="!collapsed" x-transition.opacity>Release</span>
+                    </a>
+                    @php $active = request()->is('acknowledge*'); @endphp
+                    <a href="{{ route('acknowledge.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $active ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="Acknowledge">
+                        @if($active)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <x-heroicon-o-check-circle class="w-5 h-5 shrink-0"/>
+                        <span x-show="!collapsed" x-transition.opacity>Acknowledge</span>
+                    </a>
+                    @php $active = request()->routeIs('transactions*'); @endphp
+                    <a href="{{ route('transactions.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $active ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="Transactions">
+                        @if($active)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <x-heroicon-o-clipboard-document-list class="w-5 h-5 shrink-0"/>
+                        <span x-show="!collapsed" x-transition.opacity>Transactions</span>
+                    </a>
+                    @php $active = request()->routeIs('items*'); @endphp
+                    <a href="{{ route('items.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $active ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="Inventory">
+                        @if($active)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <x-heroicon-o-cube class="w-5 h-5 shrink-0"/>
+                        <span x-show="!collapsed" x-transition.opacity>Inventory</span>
+                    </a>
                 </div>
-            @endif
+            </div>
 
-            {{-- My RIS (all roles) --}}
-            @php $myRisActive = request()->routeIs('ris.index') || request()->routeIs('ris.show') || request()->routeIs('ris.create'); @endphp
-            <a href="{{ route('ris.index') }}"
-               class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                      {{ $myRisActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                @if($myRisActive)
-                    <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                @endif
-                <x-heroicon-o-clipboard-document-list class="w-5 h-5 shrink-0"/>
-                <span x-show="!collapsed" x-transition.opacity>My RIS</span>
-            </a>
-
-            {{-- Head Approval Queue (dept heads + admin) --}}
+            {{-- ── APPROVALS (head + admin only) ── --}}
             @if($user->is_head || $user->isAdmin())
-                @php $headActive = request()->routeIs('ris.head.*'); @endphp
-                <a href="{{ route('ris.head.index') }}"
-                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                          {{ $headActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                    @if($headActive)
-                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                    @endif
-                    <span class="relative shrink-0">
-                        <x-heroicon-o-check-badge class="w-5 h-5"/>
-                        @if($risHeadBadge > 0)
-                            <span class="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
-                                {{ $risHeadBadge > 9 ? '9+' : $risHeadBadge }}
+            <div class="mt-2">
+                <button x-show="!collapsed"
+                        @click="sApprovals = !sApprovals; localStorage.setItem('nav-approvals', sApprovals ? '1' : '0')"
+                        class="flex items-center justify-between w-full px-3 py-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider hover:text-ink-heading transition">
+                    <div class="flex items-center gap-1.5">
+                        <span>Approvals</span>
+                        @if($combinedApprovalBadge > 0)
+                            <span class="bg-amber-500 text-white text-[10px] rounded-full px-1.5 leading-4 font-semibold">
+                                {{ $combinedApprovalBadge > 9 ? '9+' : $combinedApprovalBadge }}
                             </span>
                         @endif
-                    </span>
-                    <span x-show="!collapsed" x-transition.opacity>RIS Approvals</span>
-                </a>
-            @endif
-
-            {{-- Supply Queue (supply hub staff + admin) --}}
-            @if($user->isAdmin() || ($supplyHub && $user->department_id === $supplyHub->id))
-                @php $supplyActive = request()->routeIs('ris.supply.*'); @endphp
-                <a href="{{ route('ris.supply.index') }}"
-                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                          {{ $supplyActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                    @if($supplyActive)
-                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                    @endif
-                    <span class="relative shrink-0">
-                        <x-heroicon-o-inbox-stack class="w-5 h-5"/>
-                        @if($risSupplyBadge > 0)
-                            <span class="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
-                                {{ $risSupplyBadge > 9 ? '9+' : $risSupplyBadge }}
-                            </span>
-                        @endif
-                    </span>
-                    <span x-show="!collapsed" x-transition.opacity>Supply Queue</span>
-                </a>
-            @endif
-
-            {{-- ── Transfers section ── --}}
-            @php $transferActive = request()->routeIs('transfers.*'); @endphp
-            <a href="{{ route('transfers.index') }}"
-               class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                      {{ $transferActive && !request()->routeIs('transfers.head.*') ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                @if($transferActive && !request()->routeIs('transfers.head.*'))
-                    <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                @endif
-                <x-heroicon-o-arrows-right-left class="w-5 h-5 shrink-0"/>
-                <span x-show="!collapsed" x-transition.opacity>Transfers</span>
-            </a>
-
-            @if($user->is_head || $user->isAdmin())
-                @php $tHeadActive = request()->routeIs('transfers.head.*'); @endphp
-                <a href="{{ route('transfers.head.index') }}"
-                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                          {{ $tHeadActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                    @if($tHeadActive)
-                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                    @endif
-                    <span class="relative shrink-0">
-                        <x-heroicon-o-check-badge class="w-5 h-5"/>
-                        @if($transferHeadBadge > 0)
-                            <span class="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
-                                {{ $transferHeadBadge > 9 ? '9+' : $transferHeadBadge }}
-                            </span>
-                        @endif
-                    </span>
-                    <span x-show="!collapsed" x-transition.opacity>Transfer Approvals</span>
-                </a>
-            @endif
-
-            {{-- ── Receive / Release Approvals (dept heads + admin) ── --}}
-            @if($user->is_head || $user->isAdmin())
-                @php $approvalsActive = request()->routeIs('approvals.*'); @endphp
-                <a href="{{ route('approvals.index') }}"
-                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                          {{ $approvalsActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                    @if($approvalsActive)
-                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                    @endif
-                    <span class="relative shrink-0">
-                        <x-heroicon-o-clipboard-document-check class="w-5 h-5"/>
-                        @if($approvalBadge > 0)
-                            <span class="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
-                                {{ $approvalBadge > 9 ? '9+' : $approvalBadge }}
-                            </span>
-                        @endif
-                    </span>
-                    <span x-show="!collapsed" x-transition.opacity>Approvals</span>
-                </a>
-            @endif
-
-            {{-- Assemblies --}}
-            @php $asmActive = request()->routeIs('assemblies.*'); @endphp
-            <a href="{{ route('assemblies.index') }}"
-               class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                      {{ $asmActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                @if($asmActive)
-                    <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                @endif
-                <x-heroicon-o-wrench-screwdriver class="w-5 h-5 shrink-0"/>
-                <span x-show="!collapsed" x-transition.opacity>Assemblies</span>
-            </a>
-
-            {{-- IAR (supply + admin) --}}
-            @if($user->isAdmin() || ($supplyHub && $user->department_id === $supplyHub->id))
-                @php $iarActive = request()->routeIs('iar.*'); @endphp
-                <a href="{{ route('iar.index') }}"
-                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                          {{ $iarActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                    @if($iarActive)
-                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                    @endif
-                    <x-heroicon-o-document-check class="w-5 h-5 shrink-0"/>
-                    <span x-show="!collapsed" x-transition.opacity>IAR Records</span>
-                </a>
-            @endif
-
-            {{-- Reports (accounting + admin) --}}
-            @if($user->canAccessReports())
-                @php $repActive = request()->is('reports*'); @endphp
-                <a href="{{ route('reports.index') }}"
-                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                          {{ $repActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                    @if($repActive)
-                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                    @endif
-                    <x-heroicon-o-chart-bar class="w-5 h-5 shrink-0"/>
-                    <span x-show="!collapsed" x-transition.opacity>Reports</span>
-                </a>
-            @endif
-
-            {{-- Users (admin only) --}}
-            @if($user->canManageUsers())
-                @php $usersActive = request()->is('users*'); @endphp
-                <a href="{{ route('users.index') }}"
-                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                          {{ $usersActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                    @if($usersActive)
-                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                    @endif
-                    <x-heroicon-o-users class="w-5 h-5 shrink-0"/>
-                    <span x-show="!collapsed" x-transition.opacity>Users</span>
-                </a>
-
-                {{-- Departments (admin only) --}}
-                @php $deptsActive = request()->is('departments*'); @endphp
-                <a href="{{ route('departments.index') }}"
-                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                          {{ $deptsActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                    @if($deptsActive)
-                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                    @endif
-                    <x-heroicon-o-building-office class="w-5 h-5 shrink-0"/>
-                    <span x-show="!collapsed" x-transition.opacity>Departments</span>
-                </a>
-
-                {{-- Item Categories (admin only) --}}
-                @php $catsActive = request()->is('item-categories*'); @endphp
-                <a href="{{ route('item-categories.index') }}"
-                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                          {{ $catsActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                    @if($catsActive)
-                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                    @endif
-                    <x-heroicon-o-tag class="w-5 h-5 shrink-0"/>
-                    <span x-show="!collapsed" x-transition.opacity>Categories</span>
-                </a>
-            @endif
-
-            {{-- Notifications --}}
-            @php $notifActive = request()->routeIs('notifications.*'); @endphp
-            <a href="{{ route('notifications.index') }}"
-               class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
-                      {{ $notifActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}">
-                @if($notifActive)
-                    <span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>
-                @endif
-                <span class="relative shrink-0">
-                    <x-heroicon-o-bell class="w-5 h-5"/>
-                    @if($notifCount > 0)
-                        <span class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
-                            {{ $notifCount > 9 ? '9+' : $notifCount }}
+                    </div>
+                    <span :class="{ '-rotate-90': !sApprovals }" class="transition-transform inline-flex"><x-heroicon-o-chevron-down class="w-3 h-3"/></span>
+                </button>
+                <div x-show="collapsed" class="border-t border-surface-border mx-2 my-1.5"></div>
+                <div x-show="collapsed || sApprovals" class="space-y-0.5 mt-0.5">
+                    @php $approvalsActive = request()->routeIs('approvals.*'); @endphp
+                    <a href="{{ route('approvals.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $approvalsActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="Approvals">
+                        @if($approvalsActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <span class="relative shrink-0">
+                            <x-heroicon-o-clipboard-document-check class="w-5 h-5"/>
+                            @if($approvalBadge > 0)
+                                <span class="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                    {{ $approvalBadge > 9 ? '9+' : $approvalBadge }}
+                                </span>
+                            @endif
                         </span>
+                        <span x-show="!collapsed" x-transition.opacity>Approvals</span>
+                    </a>
+                    @php $headActive = request()->routeIs('ris.head.*'); @endphp
+                    <a href="{{ route('ris.head.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $headActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="RIS Approvals">
+                        @if($headActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <span class="relative shrink-0">
+                            <x-heroicon-o-check-badge class="w-5 h-5"/>
+                            @if($risHeadBadge > 0)
+                                <span class="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                    {{ $risHeadBadge > 9 ? '9+' : $risHeadBadge }}
+                                </span>
+                            @endif
+                        </span>
+                        <span x-show="!collapsed" x-transition.opacity>RIS Approvals</span>
+                    </a>
+                    @php $tHeadActive = request()->routeIs('transfers.head.*'); @endphp
+                    <a href="{{ route('transfers.head.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $tHeadActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="Transfer Approvals">
+                        @if($tHeadActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <span class="relative shrink-0">
+                            <x-heroicon-o-check-badge class="w-5 h-5"/>
+                            @if($transferHeadBadge > 0)
+                                <span class="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                    {{ $transferHeadBadge > 9 ? '9+' : $transferHeadBadge }}
+                                </span>
+                            @endif
+                        </span>
+                        <span x-show="!collapsed" x-transition.opacity>Transfer Approvals</span>
+                    </a>
+                </div>
+            </div>
+            @endif
+
+            {{-- ── REQUISITIONS ── --}}
+            <div class="mt-2">
+                <button x-show="!collapsed"
+                        @click="sRequisitions = !sRequisitions; localStorage.setItem('nav-requisitions', sRequisitions ? '1' : '0')"
+                        class="flex items-center justify-between w-full px-3 py-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider hover:text-ink-heading transition">
+                    <span>Requisitions</span>
+                    <span :class="{ '-rotate-90': !sRequisitions }" class="transition-transform inline-flex"><x-heroicon-o-chevron-down class="w-3 h-3"/></span>
+                </button>
+                <div x-show="collapsed" class="border-t border-surface-border mx-2 my-1.5"></div>
+                <div x-show="collapsed || sRequisitions" class="space-y-0.5 mt-0.5">
+                    @php $myRisActive = request()->routeIs('ris.index') || request()->routeIs('ris.show') || request()->routeIs('ris.create'); @endphp
+                    <a href="{{ route('ris.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $myRisActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="My RIS">
+                        @if($myRisActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <x-heroicon-o-clipboard-document-list class="w-5 h-5 shrink-0"/>
+                        <span x-show="!collapsed" x-transition.opacity>My RIS</span>
+                    </a>
+                    @if($user->isAdmin() || ($supplyHub && $user->department_id === $supplyHub->id))
+                        @php $supplyActive = request()->routeIs('ris.supply.*'); @endphp
+                        <a href="{{ route('ris.supply.index') }}"
+                           class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                                  {{ $supplyActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                           title="Supply Queue">
+                            @if($supplyActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                            <span class="relative shrink-0">
+                                <x-heroicon-o-inbox-stack class="w-5 h-5"/>
+                                @if($risSupplyBadge > 0)
+                                    <span class="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                        {{ $risSupplyBadge > 9 ? '9+' : $risSupplyBadge }}
+                                    </span>
+                                @endif
+                            </span>
+                            <span x-show="!collapsed" x-transition.opacity>Supply Queue</span>
+                        </a>
                     @endif
-                </span>
-                <span x-show="!collapsed" x-transition.opacity>Notifications</span>
-            </a>
+                </div>
+            </div>
+
+            {{-- ── OPERATIONS ── --}}
+            <div class="mt-2">
+                <button x-show="!collapsed"
+                        @click="sOperations = !sOperations; localStorage.setItem('nav-operations', sOperations ? '1' : '0')"
+                        class="flex items-center justify-between w-full px-3 py-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider hover:text-ink-heading transition">
+                    <span>Operations</span>
+                    <span :class="{ '-rotate-90': !sOperations }" class="transition-transform inline-flex"><x-heroicon-o-chevron-down class="w-3 h-3"/></span>
+                </button>
+                <div x-show="collapsed" class="border-t border-surface-border mx-2 my-1.5"></div>
+                <div x-show="collapsed || sOperations" class="space-y-0.5 mt-0.5">
+                    @php $transferActive = request()->routeIs('transfers.*') && !request()->routeIs('transfers.head.*'); @endphp
+                    <a href="{{ route('transfers.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $transferActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="Transfers">
+                        @if($transferActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <x-heroicon-o-arrows-right-left class="w-5 h-5 shrink-0"/>
+                        <span x-show="!collapsed" x-transition.opacity>Transfers</span>
+                    </a>
+                    @php $asmActive = request()->routeIs('assemblies.*'); @endphp
+                    <a href="{{ route('assemblies.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $asmActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="Assemblies">
+                        @if($asmActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <x-heroicon-o-wrench-screwdriver class="w-5 h-5 shrink-0"/>
+                        <span x-show="!collapsed" x-transition.opacity>Assemblies</span>
+                    </a>
+                    @if($user->isAdmin() || ($supplyHub && $user->department_id === $supplyHub->id))
+                        @php $iarActive = request()->routeIs('iar.*'); @endphp
+                        <a href="{{ route('iar.index') }}"
+                           class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                                  {{ $iarActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                           title="IAR Records">
+                            @if($iarActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                            <x-heroicon-o-document-check class="w-5 h-5 shrink-0"/>
+                            <span x-show="!collapsed" x-transition.opacity>IAR Records</span>
+                        </a>
+                    @endif
+                </div>
+            </div>
+
+            {{-- ── FINANCE ── --}}
+            <div class="mt-2">
+                <button x-show="!collapsed"
+                        @click="sFinance = !sFinance; localStorage.setItem('nav-finance', sFinance ? '1' : '0')"
+                        class="flex items-center justify-between w-full px-3 py-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider hover:text-ink-heading transition">
+                    <span>Finance</span>
+                    <span :class="{ '-rotate-90': !sFinance }" class="transition-transform inline-flex"><x-heroicon-o-chevron-down class="w-3 h-3"/></span>
+                </button>
+                <div x-show="collapsed" class="border-t border-surface-border mx-2 my-1.5"></div>
+                <div x-show="collapsed || sFinance" class="space-y-0.5 mt-0.5">
+                    @php $pcActive = request()->is('petty-cash*'); @endphp
+                    <a href="{{ route('petty-cash.index') }}"
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                              {{ $pcActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                       title="Petty Cash">
+                        @if($pcActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                        <span class="relative shrink-0">
+                            <x-heroicon-o-banknotes class="w-5 h-5"/>
+                            @if($pcBadge > 0)
+                                <span class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                    {{ $pcBadge > 9 ? '9+' : $pcBadge }}
+                                </span>
+                            @endif
+                        </span>
+                        <span x-show="!collapsed" x-transition.opacity>Petty Cash</span>
+                    </a>
+                </div>
+            </div>
+
+            {{-- ── ADMIN (admin + accounting) ── --}}
+            @if($user->canManageUsers() || $user->canAccessReports())
+            <div class="mt-2">
+                <button x-show="!collapsed"
+                        @click="sAdmin = !sAdmin; localStorage.setItem('nav-admin', sAdmin ? '1' : '0')"
+                        class="flex items-center justify-between w-full px-3 py-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider hover:text-ink-heading transition">
+                    <span>Admin</span>
+                    <span :class="{ '-rotate-90': !sAdmin }" class="transition-transform inline-flex"><x-heroicon-o-chevron-down class="w-3 h-3"/></span>
+                </button>
+                <div x-show="collapsed" class="border-t border-surface-border mx-2 my-1.5"></div>
+                <div x-show="collapsed || sAdmin" class="space-y-0.5 mt-0.5">
+                    @if($user->canAccessReports())
+                        @php $repActive = request()->is('reports*'); @endphp
+                        <a href="{{ route('reports.index') }}"
+                           class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                                  {{ $repActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                           title="Reports">
+                            @if($repActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                            <x-heroicon-o-chart-bar class="w-5 h-5 shrink-0"/>
+                            <span x-show="!collapsed" x-transition.opacity>Reports</span>
+                        </a>
+                    @endif
+                    @if($user->canManageUsers())
+                        @php $usersActive = request()->is('users*'); @endphp
+                        <a href="{{ route('users.index') }}"
+                           class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                                  {{ $usersActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                           title="Users">
+                            @if($usersActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                            <x-heroicon-o-users class="w-5 h-5 shrink-0"/>
+                            <span x-show="!collapsed" x-transition.opacity>Users</span>
+                        </a>
+                        @php $deptsActive = request()->is('departments*'); @endphp
+                        <a href="{{ route('departments.index') }}"
+                           class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                                  {{ $deptsActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                           title="Departments">
+                            @if($deptsActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                            <x-heroicon-o-building-office class="w-5 h-5 shrink-0"/>
+                            <span x-show="!collapsed" x-transition.opacity>Departments</span>
+                        </a>
+                        @php $catsActive = request()->is('item-categories*'); @endphp
+                        <a href="{{ route('item-categories.index') }}"
+                           class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                                  {{ $catsActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                           title="Categories">
+                            @if($catsActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                            <x-heroicon-o-tag class="w-5 h-5 shrink-0"/>
+                            <span x-show="!collapsed" x-transition.opacity>Categories</span>
+                        </a>
+                    @endif
+                </div>
+            </div>
+            @endif
+
+            {{-- Notifications — standalone (always visible) --}}
+            <div class="mt-2">
+                @php $notifActive = request()->routeIs('notifications.*'); @endphp
+                <a href="{{ route('notifications.index') }}"
+                   class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition
+                          {{ $notifActive ? 'bg-primary-50 text-primary-700 font-medium' : 'text-ink-body hover:bg-surface-page hover:text-ink-heading' }}"
+                   title="Notifications">
+                    @if($notifActive)<span class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary-600 rounded-r"></span>@endif
+                    <span class="relative shrink-0">
+                        <x-heroicon-o-bell class="w-5 h-5"/>
+                        @if($notifCount > 0)
+                            <span class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                                {{ $notifCount > 9 ? '9+' : $notifCount }}
+                            </span>
+                        @endif
+                    </span>
+                    <span x-show="!collapsed" x-transition.opacity>Notifications</span>
+                </a>
+            </div>
+
         </nav>
 
         <div class="px-5 py-4 border-t border-surface-border" x-show="!collapsed" x-transition.opacity>
