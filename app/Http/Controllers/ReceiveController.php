@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Item;
 use App\Models\ItemCategory;
+use App\Models\ItemLog;
 use App\Models\Notification;
 use App\Models\Transaction;
 use App\Models\User;
@@ -37,6 +38,7 @@ class ReceiveController extends Controller
         if ($autoApproved) {
             // Head / Admin: update inventory immediately
             if ($item) {
+                $qtyBefore = $item->current_qty;
                 $item->total_qty_received += $request->qty;
                 $item->current_qty        += $request->qty;
                 $item->save();
@@ -54,7 +56,10 @@ class ReceiveController extends Controller
                     'department_id'      => $deptId,
                     'expiry_date'        => $request->expiry_date ?? null,
                 ]);
+                $qtyBefore = 0;
             }
+
+            ItemLog::record($item, 'approved_receive', $request->qty, $qtyBefore);
 
             Transaction::create([
                 'type'                  => 'received',

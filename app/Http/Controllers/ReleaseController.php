@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Item;
+use App\Models\ItemLog;
 use App\Models\Notification;
 use App\Models\Transaction;
 use App\Models\User;
@@ -58,8 +59,11 @@ class ReleaseController extends Controller
 
         if ($autoApproved) {
             // Head / Admin: decrement inventory immediately
+            $qtyBefore = $item->current_qty;
             $item->current_qty -= $request->qty;
             $item->save();
+
+            ItemLog::record($item, 'approved_release', -$request->qty, $qtyBefore);
 
             Transaction::create([
                 'type'                  => 'released',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ItemLog;
 use App\Models\Notification;
 use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
@@ -39,16 +40,20 @@ class TransactionApprovalController extends Controller
         $item = $transaction->item;
 
         if ($transaction->type === 'received') {
+            $qtyBefore = $item->current_qty;
             $item->total_qty_received += $transaction->qty;
             $item->current_qty        += $transaction->qty;
             $item->save();
+            ItemLog::record($item, 'approved_receive', $transaction->qty, $qtyBefore, "Transaction #{$transaction->id}");
         } elseif ($transaction->type === 'released') {
             if ($item->current_qty < $transaction->qty) {
                 return back()->with('error',
                     "Cannot approve: only {$item->current_qty} {$item->unit} available, but {$transaction->qty} requested.");
             }
+            $qtyBefore = $item->current_qty;
             $item->current_qty -= $transaction->qty;
             $item->save();
+            ItemLog::record($item, 'approved_release', -$transaction->qty, $qtyBefore, "Transaction #{$transaction->id}");
         }
 
         $updates = [
@@ -161,6 +166,7 @@ class TransactionApprovalController extends Controller
             ];
 
             if ($transaction->type === 'received') {
+                $qtyBefore = $item->current_qty;
                 $item->total_qty_received += $transaction->qty;
                 $item->current_qty        += $transaction->qty;
 
@@ -168,11 +174,14 @@ class TransactionApprovalController extends Controller
                     $item->save();
                     $transaction->update($updates);
                 });
+
+                ItemLog::record($item, 'approved_receive', $transaction->qty, $qtyBefore, "Transaction #{$transaction->id} (bulk)");
             } elseif ($transaction->type === 'released') {
                 if ($item->current_qty < $transaction->qty) {
                     $failed[] = "\"{$transaction->item_name_snapshot}\": insufficient stock ({$item->current_qty} {$item->unit} available)";
                     continue;
                 }
+                $qtyBefore = $item->current_qty;
                 $item->current_qty -= $transaction->qty;
                 $updates['acknowledgment_status'] = 'pending';
 
@@ -180,6 +189,8 @@ class TransactionApprovalController extends Controller
                     $item->save();
                     $transaction->update($updates);
                 });
+
+                ItemLog::record($item, 'approved_release', -$transaction->qty, $qtyBefore, "Transaction #{$transaction->id} (bulk)");
             }
 
             $this->notifyApproval($transaction);

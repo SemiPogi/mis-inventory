@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ItemLog;
 use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,17 @@ class TransactionCancelController extends Controller
         }
 
         $transaction->update(['head_approval_status' => 'cancelled']);
+
+        // Write audit log BEFORE potential item deletion
+        if ($transaction->item) {
+            ItemLog::record(
+                $transaction->item,
+                'cancelled',
+                0,
+                $transaction->item->current_qty,
+                "Transaction #{$transaction->id} cancelled"
+            );
+        }
 
         // Receive-only: clean up an item that was created solely by this submission.
         // Because transactions.item_id has a non-nullable FK to items, we delete all
