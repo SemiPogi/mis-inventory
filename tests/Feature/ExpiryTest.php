@@ -202,7 +202,7 @@ class ExpiryTest extends TestCase
         $response = $this->actingAs($staff)->get(route('dashboard'));
 
         $response->assertStatus(200);
-        $response->assertSee('Expiry Alerts');
+        $response->assertSee('Expiry (');
         $response->assertSee('Expiring Soon Medicine');
     }
 
@@ -223,6 +223,6 @@ class ExpiryTest extends TestCase
         $response = $this->actingAs($staff)->get(route('dashboard'));
 
         $response->assertStatus(200);
-        $response->assertDontSee('Expiry Alerts');
+        $response->assertDontSee('Expiry (');
     }
 }

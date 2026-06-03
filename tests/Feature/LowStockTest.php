@@ -62,7 +62,7 @@ class LowStockTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee($item->name)
-            ->assertSee('Low Stock Alerts')
+            ->assertSee('Low Stock (')
             ->assertSee('Low Stock');
     }
 
@@ -76,7 +76,7 @@ class LowStockTest extends TestCase
         $this->actingAs($admin)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertDontSee('Low Stock Alerts');
+            ->assertDontSee('Low Stock (');
     }
 
     /** @test */

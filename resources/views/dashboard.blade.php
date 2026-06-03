@@ -82,101 +82,127 @@
         </x-bento-card>
     </div>
 
-    {{-- Expiry Alert --}}
-    @if($expiringItems->isNotEmpty())
-    <x-bento-card :padded="false" class="mb-4">
+    {{-- ── Unified Alerts Card ──────────────────────────────────────── --}}
+    @php
+        $hasAnyAlert = $expiringItems->isNotEmpty()
+                    || $lowStockItems->isNotEmpty()
+                    || $warrantyItems->isNotEmpty();
+        $defaultTab  = $expiringItems->isNotEmpty()  ? 'expiry'
+                     : ($lowStockItems->isNotEmpty()  ? 'low-stock' : 'warranty');
+    @endphp
+    @if($hasAnyAlert)
+    <x-bento-card :padded="false" class="mb-4"
+        x-data="{ tab: '{{ $defaultTab }}' }">
         <div class="px-6 py-4 border-b border-surface-border flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <x-heroicon-o-exclamation-triangle class="w-4 h-4 text-amber-500"/>
-                <h2 class="text-sm font-semibold text-ink-heading">Expiry Alerts</h2>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <x-heroicon-o-exclamation-triangle class="w-4 h-4 text-amber-500"/>
+                    <h2 class="text-sm font-semibold text-ink-heading">Alerts</h2>
+                </div>
+                <div class="flex gap-1">
+                    @if($expiringItems->isNotEmpty())
+                        <button @click="tab = 'expiry'"
+                                :class="tab === 'expiry' ? 'bg-amber-100 text-amber-700' : 'text-ink-muted hover:text-ink-heading'"
+                                class="px-3 py-1 rounded-full text-xs font-medium transition">
+                            Expiry ({{ $expiringItems->count() }})
+                        </button>
+                    @endif
+                    @if($lowStockItems->isNotEmpty())
+                        <button @click="tab = 'low-stock'"
+                                :class="tab === 'low-stock' ? 'bg-amber-100 text-amber-700' : 'text-ink-muted hover:text-ink-heading'"
+                                class="px-3 py-1 rounded-full text-xs font-medium transition">
+                            Low Stock ({{ $lowStockItems->count() }})
+                        </button>
+                    @endif
+                    @if($warrantyItems->isNotEmpty())
+                        <button @click="tab = 'warranty'"
+                                :class="tab === 'warranty' ? 'bg-amber-100 text-amber-700' : 'text-ink-muted hover:text-ink-heading'"
+                                class="px-3 py-1 rounded-full text-xs font-medium transition">
+                            Warranty ({{ $warrantyItems->count() }})
+                        </button>
+                    @endif
+                </div>
             </div>
             <a href="{{ route('items.index') }}" class="text-xs font-medium text-primary-600 hover:text-primary-700">View all items</a>
         </div>
-        <x-table :headers="['Item', 'Category', 'Stock', 'Expiry Date', 'Status']">
-            @foreach($expiringItems as $ei)
-                <x-table.row>
-                    <td class="px-6 py-3 font-medium text-ink-heading">
-                        <a href="{{ route('items.show', $ei) }}" class="hover:text-primary-600">{{ $ei->name }}</a>
-                    </td>
-                    <td class="px-6 py-3 text-sm text-ink-muted">{{ $ei->category ?? '—' }}</td>
-                    <td class="px-6 py-3 text-sm text-ink-body">{{ $ei->current_qty }} {{ $ei->unit }}</td>
-                    <td class="px-6 py-3 text-sm text-ink-body">{{ $ei->expiry_date->format('M d, Y') }}</td>
-                    <td class="px-6 py-3">
-                        @if($ei->expiryStatus() === 'expired')
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">Expired</span>
-                        @else
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Expires {{ $ei->expiry_date->diffForHumans() }}</span>
-                        @endif
-                    </td>
-                </x-table.row>
-            @endforeach
-        </x-table>
-    </x-bento-card>
-    @endif
 
-    {{-- Low Stock Alert --}}
-    @if($lowStockItems->isNotEmpty())
-    <x-bento-card :padded="false" class="mb-4">
-        <div class="px-6 py-4 border-b border-surface-border flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <x-heroicon-o-arrow-trending-down class="w-4 h-4 text-amber-500"/>
-                <h2 class="text-sm font-semibold text-ink-heading">Low Stock Alerts</h2>
-            </div>
-            <a href="{{ route('items.index') }}" class="text-xs font-medium text-primary-600 hover:text-primary-700">View all items</a>
+        {{-- Expiry tab --}}
+        @if($expiringItems->isNotEmpty())
+        <div x-show="tab === 'expiry'">
+            <x-table :headers="['Item', 'Category', 'Stock', 'Expiry Date', 'Status']">
+                @foreach($expiringItems as $ei)
+                    <x-table.row>
+                        <td class="px-6 py-3 font-medium text-ink-heading">
+                            <a href="{{ route('items.show', $ei) }}" class="hover:text-primary-600">{{ $ei->name }}</a>
+                        </td>
+                        <td class="px-6 py-3 text-sm text-ink-muted">{{ $ei->category ?? '—' }}</td>
+                        <td class="px-6 py-3 text-sm text-ink-body">{{ $ei->current_qty }} {{ $ei->unit }}</td>
+                        <td class="px-6 py-3 text-sm text-ink-body">{{ $ei->expiry_date->format('M d, Y') }}</td>
+                        <td class="px-6 py-3">
+                            @if($ei->expiryStatus() === 'expired')
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">Expired</span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Expires {{ $ei->expiry_date->diffForHumans() }}</span>
+                            @endif
+                        </td>
+                    </x-table.row>
+                @endforeach
+            </x-table>
         </div>
-        <x-table :headers="['Item', 'Category', 'Current Stock', 'Min Stock', 'Status']">
-            @foreach($lowStockItems as $ls)
-                <x-table.row>
-                    <td class="px-6 py-3 font-medium text-ink-heading">
-                        <a href="{{ route('items.show', $ls) }}" class="hover:text-primary-600">{{ $ls->name }}</a>
-                    </td>
-                    <td class="px-6 py-3 text-sm text-ink-muted">{{ $ls->category ?? '—' }}</td>
-                    <td class="px-6 py-3 text-sm text-ink-body">{{ $ls->current_qty }} {{ $ls->unit }}</td>
-                    <td class="px-6 py-3 text-sm text-ink-muted">{{ $ls->min_stock_qty }} {{ $ls->unit }}</td>
-                    <td class="px-6 py-3">
-                        @if($ls->current_qty === 0)
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">Out of Stock</span>
-                        @else
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Low Stock</span>
-                        @endif
-                    </td>
-                </x-table.row>
-            @endforeach
-        </x-table>
-    </x-bento-card>
-    @endif
+        @endif
 
-    {{-- Warranty Alerts --}}
-    @if($warrantyItems->isNotEmpty())
-    <x-bento-card :padded="false" class="mb-4">
-        <div class="px-6 py-4 border-b border-surface-border flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <x-heroicon-o-shield-exclamation class="w-4 h-4 text-amber-500"/>
-                <h2 class="text-sm font-semibold text-ink-heading">Warranty Alerts</h2>
-            </div>
-            <a href="{{ route('items.index') }}" class="text-xs font-medium text-primary-600 hover:text-primary-700">View all items</a>
+        {{-- Low Stock tab --}}
+        @if($lowStockItems->isNotEmpty())
+        <div x-show="tab === 'low-stock'">
+            <x-table :headers="['Item', 'Category', 'Current Stock', 'Min Stock', 'Status']">
+                @foreach($lowStockItems as $ls)
+                    <x-table.row>
+                        <td class="px-6 py-3 font-medium text-ink-heading">
+                            <a href="{{ route('items.show', $ls) }}" class="hover:text-primary-600">{{ $ls->name }}</a>
+                        </td>
+                        <td class="px-6 py-3 text-sm text-ink-muted">{{ $ls->category ?? '—' }}</td>
+                        <td class="px-6 py-3 text-sm text-ink-body">{{ $ls->current_qty }} {{ $ls->unit }}</td>
+                        <td class="px-6 py-3 text-sm text-ink-muted">{{ $ls->min_stock_qty }} {{ $ls->unit }}</td>
+                        <td class="px-6 py-3">
+                            @if($ls->current_qty === 0)
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">Out of Stock</span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Low Stock</span>
+                            @endif
+                        </td>
+                    </x-table.row>
+                @endforeach
+            </x-table>
         </div>
-        <x-table :headers="['Item', 'Category', 'Provider', 'Warranty Expiry', 'Status']">
-            @foreach($warrantyItems as $wi)
-                <x-table.row>
-                    <td class="px-6 py-3 font-medium text-ink-heading">
-                        <a href="{{ route('items.show', $wi) }}" class="hover:text-primary-600">{{ $wi->name }}</a>
-                    </td>
-                    <td class="px-6 py-3 text-sm text-ink-muted">{{ $wi->category ?? '—' }}</td>
-                    <td class="px-6 py-3 text-sm text-ink-muted">{{ $wi->warranty_provider ?? '—' }}</td>
-                    <td class="px-6 py-3 text-sm text-ink-body">{{ $wi->warranty_expiry_date->format('M d, Y') }}</td>
-                    <td class="px-6 py-3">
-                        @if($wi->warrantyStatus() === 'expired')
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">Expired</span>
-                        @elseif($wi->warrantyStatus() === 'expiring')
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">Expiring soon</span>
-                        @else
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{{ $wi->warranty_expiry_date->diffForHumans() }}</span>
-                        @endif
-                    </td>
-                </x-table.row>
-            @endforeach
-        </x-table>
+        @endif
+
+        {{-- Warranty tab --}}
+        @if($warrantyItems->isNotEmpty())
+        <div x-show="tab === 'warranty'">
+            <x-table :headers="['Item', 'Category', 'Provider', 'Warranty Expiry', 'Status']">
+                @foreach($warrantyItems as $wi)
+                    <x-table.row>
+                        <td class="px-6 py-3 font-medium text-ink-heading">
+                            <a href="{{ route('items.show', $wi) }}" class="hover:text-primary-600">{{ $wi->name }}</a>
+                        </td>
+                        <td class="px-6 py-3 text-sm text-ink-muted">{{ $wi->category ?? '—' }}</td>
+                        <td class="px-6 py-3 text-sm text-ink-muted">{{ $wi->warranty_provider ?? '—' }}</td>
+                        <td class="px-6 py-3 text-sm text-ink-body">{{ $wi->warranty_expiry_date->format('M d, Y') }}</td>
+                        <td class="px-6 py-3">
+                            @if($wi->warrantyStatus() === 'expired')
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">Expired</span>
+                            @elseif($wi->warrantyStatus() === 'expiring')
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">Expiring soon</span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{{ $wi->warranty_expiry_date->diffForHumans() }}</span>
+                            @endif
+                        </td>
+                    </x-table.row>
+                @endforeach
+            </x-table>
+        </div>
+        @endif
+
     </x-bento-card>
     @endif
 

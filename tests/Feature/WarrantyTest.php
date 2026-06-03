@@ -175,7 +175,7 @@ class WarrantyTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee($item->name)
-            ->assertSee('Warranty Alerts');
+            ->assertSee('Warranty (');
     }
 
     /** @test */
@@ -189,6 +189,6 @@ class WarrantyTest extends TestCase
         $this->actingAs($admin)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertDontSee('Warranty Alerts');
+            ->assertDontSee('Warranty (');
     }
 }
