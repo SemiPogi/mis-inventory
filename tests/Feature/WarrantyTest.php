@@ -131,4 +131,34 @@ class WarrantyTest extends TestCase
         $this->assertEquals(now()->addYears(2)->toDateString(), $item->warranty_expiry_date->toDateString());
         $this->assertEquals('Parts and labor', $item->warranty_notes);
     }
+
+    /** @test */
+    public function test_items_show_displays_warranty_card_when_data_is_present(): void
+    {
+        $dept  = $this->makeDept();
+        $admin = \App\Models\User::factory()->create(['role' => 'admin']);
+        $item  = $this->makeItem($dept, [
+            'warranty_provider'    => 'HP Philippines',
+            'warranty_expiry_date' => now()->addYears(2)->toDateString(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('items.show', $item))
+            ->assertOk()
+            ->assertSee('Warranty')
+            ->assertSee('HP Philippines');
+    }
+
+    /** @test */
+    public function test_items_show_hides_warranty_card_when_no_warranty_data(): void
+    {
+        $dept  = $this->makeDept();
+        $admin = \App\Models\User::factory()->create(['role' => 'admin']);
+        $item  = $this->makeItem($dept); // no warranty fields
+
+        $this->actingAs($admin)
+            ->get(route('items.show', $item))
+            ->assertOk()
+            ->assertDontSee('Warranty Provider');
+    }
 }

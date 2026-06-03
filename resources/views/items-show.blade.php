@@ -67,6 +67,54 @@
     </div>
     @endif
 
+    @if($item->warranty_provider || $item->warranty_expiry_date || $item->warranty_reference_no || $item->warranty_notes)
+    <div class="mb-4">
+        <x-bento-card>
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-3">
+                        <x-heroicon-o-shield-check class="w-4 h-4 text-emerald-500"/>
+                        <p class="text-xs text-ink-muted uppercase tracking-wide font-medium">Warranty</p>
+                    </div>
+                    @if($item->warranty_provider)
+                        <p class="text-sm text-ink-muted">Warranty Provider</p>
+                        <p class="font-medium text-ink-heading mb-2">{{ $item->warranty_provider }}</p>
+                    @endif
+                    @if($item->warranty_reference_no)
+                        <p class="text-sm text-ink-muted">Reference No.</p>
+                        <p class="font-medium text-ink-heading mb-2">{{ $item->warranty_reference_no }}</p>
+                    @endif
+                    @if($item->warranty_expiry_date)
+                        <p class="text-sm text-ink-muted">Expires</p>
+                        <p class="font-medium text-ink-heading mb-1">{{ $item->warranty_expiry_date->format('M d, Y') }}</p>
+                        <p class="text-xs text-ink-muted">
+                            @if($item->warrantyStatus() === 'expired')
+                                Expired {{ $item->warranty_expiry_date->diffForHumans() }}
+                            @else
+                                Expires {{ $item->warranty_expiry_date->diffForHumans() }}
+                            @endif
+                        </p>
+                    @endif
+                    @if($item->warranty_notes)
+                        <p class="text-sm text-ink-muted mt-2">Coverage</p>
+                        <p class="text-sm text-ink-body">{{ $item->warranty_notes }}</p>
+                    @endif
+                </div>
+                @php $ws = $item->warrantyStatus(); @endphp
+                @if($ws === 'expired')
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-rose-100 text-rose-700 shrink-0">Expired</span>
+                @elseif($ws === 'expiring')
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-rose-100 text-rose-700 shrink-0">Expiring soon</span>
+                @elseif($ws === 'expiring-soon')
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-700 shrink-0">Expiring</span>
+                @elseif($ws === 'active')
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700 shrink-0">Active</span>
+                @endif
+            </div>
+        </x-bento-card>
+    </div>
+    @endif
+
     <x-bento-card variant="hero" class="mb-4">
         <p class="text-xs uppercase tracking-wide opacity-80 font-medium">30-day movement</p>
         <div class="mt-3 h-20">
