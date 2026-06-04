@@ -351,7 +351,7 @@
             </div>
 
             {{-- ── ADMIN (admin + accounting) ── --}}
-            @if($user->canManageUsers() || $user->canAccessReports())
+            @if($user->canManageUsers() || $user->canAccessHospitalWideReports())
             <div class="mt-2">
                 <button x-show="!collapsed"
                         @click="sAdmin = !sAdmin; localStorage.setItem('nav-admin', sAdmin ? '1' : '0')"

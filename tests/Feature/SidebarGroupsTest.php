@@ -78,7 +78,7 @@ class SidebarGroupsTest extends TestCase
         $this->actingAs($staff)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertDontSee('>Approvals<');
+            ->assertDontSee(route('approvals.index'));
     }
 
     /** @test */
@@ -95,7 +95,25 @@ class SidebarGroupsTest extends TestCase
         $this->actingAs($staff)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertDontSee('>Admin<');
+            ->assertDontSee(route('users.index'))
+            ->assertDontSee(route('reports.index'));
+    }
+
+    /** @test */
+    public function test_sidebar_shows_admin_section_for_accounting_user(): void
+    {
+        $dept       = $this->makeDept();
+        $accounting = User::factory()->create([
+            'role'          => 'accounting',
+            'name'          => 'Test Accounting',
+            'department_id' => $dept->id,
+        ]);
+
+        $this->actingAs($accounting)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee(route('reports.index'))
+            ->assertDontSee(route('users.index'));
     }
 
     /** @test */
