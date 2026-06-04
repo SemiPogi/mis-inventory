@@ -21,191 +21,236 @@
         </x-slot:actions>
     </x-page-header>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <x-bento-card>
-            <p class="text-xs text-ink-muted uppercase tracking-wide">Category</p>
-            <p class="font-medium text-ink-heading mt-1">{{ $item->category ?? '—' }}</p>
-        </x-bento-card>
-        <x-bento-card>
-            <p class="text-xs text-ink-muted uppercase tracking-wide">Serial No.</p>
-            <p class="font-medium text-ink-heading mt-1">{{ $item->serial_number ?? '—' }}</p>
-        </x-bento-card>
-        <x-bento-card>
-            <p class="text-xs text-ink-muted uppercase tracking-wide">Total Received</p>
-            <p class="font-medium text-ink-heading mt-1">{{ $item->total_qty_received }} {{ $item->unit }}</p>
-        </x-bento-card>
-        <x-bento-card>
-            <p class="text-xs text-ink-muted uppercase tracking-wide">Current Stock</p>
-            <p class="font-medium text-ink-heading mt-1" x-data x-count-up>{{ $item->current_qty }}</p>
-        </x-bento-card>
-    </div>
+    {{-- Tab layout --}}
+    <div x-data="{
+        tab: (window.location.hash ? window.location.hash.slice(1) : 'overview')
+    }" @hashchange.window="tab = (window.location.hash ? window.location.hash.slice(1) : 'overview')">
 
-    @if($item->expiry_date)
-    <div class="mb-4">
-        <x-bento-card>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs text-ink-muted uppercase tracking-wide mb-1">Expiry Date</p>
-                    <p class="text-lg font-semibold text-ink-heading">{{ $item->expiry_date->format('M d, Y') }}</p>
-                    <p class="text-xs text-ink-muted mt-0.5">
-                        @if($item->isExpired())
-                            Expired {{ $item->expiry_date->diffForHumans() }}
+        {{-- Tab navigation --}}
+        <div class="flex gap-0 mb-4 border-b border-surface-border">
+            <a href="#overview"
+               @click.prevent="tab = 'overview'; window.location.hash = 'overview'"
+               :class="tab === 'overview'
+                   ? 'border-b-2 border-primary-600 text-primary-700 font-medium'
+                   : 'border-b-2 border-transparent text-ink-muted hover:text-ink-heading'"
+               class="px-4 py-2.5 text-sm transition -mb-px cursor-pointer">
+                Overview
+            </a>
+            <a href="#history"
+               @click.prevent="tab = 'history'; window.location.hash = 'history'"
+               :class="tab === 'history'
+                   ? 'border-b-2 border-primary-600 text-primary-700 font-medium'
+                   : 'border-b-2 border-transparent text-ink-muted hover:text-ink-heading'"
+               class="px-4 py-2.5 text-sm transition -mb-px cursor-pointer">
+                History
+            </a>
+            <a href="#audit-log"
+               @click.prevent="tab = 'audit-log'; window.location.hash = 'audit-log'"
+               :class="tab === 'audit-log'
+                   ? 'border-b-2 border-primary-600 text-primary-700 font-medium'
+                   : 'border-b-2 border-transparent text-ink-muted hover:text-ink-heading'"
+               class="px-4 py-2.5 text-sm transition -mb-px cursor-pointer">
+                Audit Log
+            </a>
+        </div>
+
+        {{-- ── Overview Tab ── --}}
+        <div x-show="tab === 'overview'">
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <x-bento-card>
+                    <p class="text-xs text-ink-muted uppercase tracking-wide">Category</p>
+                    <p class="font-medium text-ink-heading mt-1">{{ $item->category ?? '—' }}</p>
+                </x-bento-card>
+                <x-bento-card>
+                    <p class="text-xs text-ink-muted uppercase tracking-wide">Serial No.</p>
+                    <p class="font-medium text-ink-heading mt-1">{{ $item->serial_number ?? '—' }}</p>
+                </x-bento-card>
+                <x-bento-card>
+                    <p class="text-xs text-ink-muted uppercase tracking-wide">Total Received</p>
+                    <p class="font-medium text-ink-heading mt-1">{{ $item->total_qty_received }} {{ $item->unit }}</p>
+                </x-bento-card>
+                <x-bento-card>
+                    <p class="text-xs text-ink-muted uppercase tracking-wide">Current Stock</p>
+                    <p class="font-medium text-ink-heading mt-1" x-data x-count-up>{{ $item->current_qty }}</p>
+                </x-bento-card>
+            </div>
+
+            @if($item->expiry_date)
+            <div class="mb-4">
+                <x-bento-card>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-ink-muted uppercase tracking-wide mb-1">Expiry Date</p>
+                            <p class="text-lg font-semibold text-ink-heading">{{ $item->expiry_date->format('M d, Y') }}</p>
+                            <p class="text-xs text-ink-muted mt-0.5">
+                                @if($item->isExpired())
+                                    Expired {{ $item->expiry_date->diffForHumans() }}
+                                @else
+                                    Expires {{ $item->expiry_date->diffForHumans() }}
+                                @endif
+                            </p>
+                        </div>
+                        @if($item->expiryStatus() === 'expired')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-rose-100 text-rose-700">Expired</span>
+                        @elseif($item->expiryStatus() === 'soon')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-700">Expiring soon</span>
                         @else
-                            Expires {{ $item->expiry_date->diffForHumans() }}
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700">Valid</span>
                         @endif
-                    </p>
+                    </div>
+                </x-bento-card>
+            </div>
+            @endif
+
+            @if($item->warranty_provider || $item->warranty_expiry_date || $item->warranty_reference_no || $item->warranty_notes)
+            <div class="mb-4">
+                <x-bento-card>
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-3">
+                                <x-heroicon-o-shield-check class="w-4 h-4 text-emerald-500"/>
+                                <p class="text-xs text-ink-muted uppercase tracking-wide font-medium">Warranty</p>
+                            </div>
+                            @if($item->warranty_provider)
+                                <p class="text-sm text-ink-muted">Warranty Provider</p>
+                                <p class="font-medium text-ink-heading mb-2">{{ $item->warranty_provider }}</p>
+                            @endif
+                            @if($item->warranty_reference_no)
+                                <p class="text-sm text-ink-muted">Reference No.</p>
+                                <p class="font-medium text-ink-heading mb-2">{{ $item->warranty_reference_no }}</p>
+                            @endif
+                            @if($item->warranty_expiry_date)
+                                <p class="text-sm text-ink-muted">Expires</p>
+                                <p class="font-medium text-ink-heading mb-1">{{ $item->warranty_expiry_date->format('M d, Y') }}</p>
+                                <p class="text-xs text-ink-muted">
+                                    @if($item->warrantyStatus() === 'expired')
+                                        Expired {{ $item->warranty_expiry_date->diffForHumans() }}
+                                    @else
+                                        Expires {{ $item->warranty_expiry_date->diffForHumans() }}
+                                    @endif
+                                </p>
+                            @endif
+                            @if($item->warranty_notes)
+                                <p class="text-sm text-ink-muted mt-2">Coverage</p>
+                                <p class="text-sm text-ink-body">{{ $item->warranty_notes }}</p>
+                            @endif
+                        </div>
+                        @php $ws = $item->warrantyStatus(); @endphp
+                        @if($ws === 'expired')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-rose-100 text-rose-700 shrink-0">Expired</span>
+                        @elseif($ws === 'expiring')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-rose-100 text-rose-700 shrink-0">Expiring soon</span>
+                        @elseif($ws === 'expiring-soon')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-700 shrink-0">Expiring</span>
+                        @elseif($ws === 'active')
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700 shrink-0">Active</span>
+                        @endif
+                    </div>
+                </x-bento-card>
+            </div>
+            @endif
+
+            <x-bento-card variant="hero" class="mb-4">
+                <p class="text-xs uppercase tracking-wide opacity-80 font-medium">30-day movement</p>
+                <div class="mt-3 h-20">
+                    <x-sparkline :data="$movement30" color="#ffffff"/>
                 </div>
-                @if($item->expiryStatus() === 'expired')
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-rose-100 text-rose-700">Expired</span>
-                @elseif($item->expiryStatus() === 'soon')
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-700">Expiring soon</span>
+            </x-bento-card>
+
+        </div>{{-- /overview --}}
+
+        {{-- ── History Tab ── --}}
+        <div x-show="tab === 'history'">
+            <x-bento-card :padded="false">
+                <div class="px-6 py-4 border-b border-surface-border">
+                    <h2 class="text-sm font-semibold text-ink-heading">Transaction History</h2>
+                </div>
+                @if($transactions->isEmpty())
+                    <x-empty-state icon="document-text" title="No transactions yet" hint="Receipts and releases will appear here."/>
                 @else
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700">Valid</span>
+                    <x-table :headers="['Type','Qty','From / To','Office','Date','Status','']">
+                        @foreach($transactions as $tx)
+                            <x-table.row>
+                                <td class="px-6 py-3">
+                                    @if($tx->type === 'received')
+                                        <x-status-badge status="received">IN</x-status-badge>
+                                    @else
+                                        <x-status-badge status="released">OUT</x-status-badge>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-3 text-ink-body">{{ $tx->qty }} {{ $tx->unit }}</td>
+                                <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? $tx->received_from : $tx->receiver_name }}</td>
+                                <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? 'S&P Office' : $tx->released_to_office }}</td>
+                                <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? $tx->date_received : $tx->date_released }}</td>
+                                <td class="px-6 py-3">
+                                    @if($tx->type === 'received')
+                                        <x-status-badge status="received"/>
+                                    @elseif($tx->acknowledgment_status === 'acknowledged')
+                                        <x-status-badge status="acknowledged"/>
+                                    @else
+                                        <x-status-badge status="pending"/>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-3 text-right">
+                                    <a href="{{ route('transactions.show', $tx->id) }}" class="text-primary-600 hover:text-primary-700 text-xs font-medium">View →</a>
+                                </td>
+                            </x-table.row>
+                        @endforeach
+                    </x-table>
                 @endif
-            </div>
-        </x-bento-card>
-    </div>
-    @endif
+            </x-bento-card>
+        </div>{{-- /history --}}
 
-    @if($item->warranty_provider || $item->warranty_expiry_date || $item->warranty_reference_no || $item->warranty_notes)
-    <div class="mb-4">
-        <x-bento-card>
-            <div class="flex items-start justify-between">
-                <div class="flex-1">
-                    <div class="flex items-center gap-2 mb-3">
-                        <x-heroicon-o-shield-check class="w-4 h-4 text-emerald-500"/>
-                        <p class="text-xs text-ink-muted uppercase tracking-wide font-medium">Warranty</p>
-                    </div>
-                    @if($item->warranty_provider)
-                        <p class="text-sm text-ink-muted">Warranty Provider</p>
-                        <p class="font-medium text-ink-heading mb-2">{{ $item->warranty_provider }}</p>
-                    @endif
-                    @if($item->warranty_reference_no)
-                        <p class="text-sm text-ink-muted">Reference No.</p>
-                        <p class="font-medium text-ink-heading mb-2">{{ $item->warranty_reference_no }}</p>
-                    @endif
-                    @if($item->warranty_expiry_date)
-                        <p class="text-sm text-ink-muted">Expires</p>
-                        <p class="font-medium text-ink-heading mb-1">{{ $item->warranty_expiry_date->format('M d, Y') }}</p>
-                        <p class="text-xs text-ink-muted">
-                            @if($item->warrantyStatus() === 'expired')
-                                Expired {{ $item->warranty_expiry_date->diffForHumans() }}
-                            @else
-                                Expires {{ $item->warranty_expiry_date->diffForHumans() }}
-                            @endif
-                        </p>
-                    @endif
-                    @if($item->warranty_notes)
-                        <p class="text-sm text-ink-muted mt-2">Coverage</p>
-                        <p class="text-sm text-ink-body">{{ $item->warranty_notes }}</p>
-                    @endif
+        {{-- ── Audit Log Tab ── --}}
+        <div x-show="tab === 'audit-log'">
+            <x-bento-card :padded="false">
+                <div class="px-6 py-4 border-b border-surface-border">
+                    <h2 class="text-sm font-semibold text-ink-heading">Audit Log</h2>
                 </div>
-                @php $ws = $item->warrantyStatus(); @endphp
-                @if($ws === 'expired')
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-rose-100 text-rose-700 shrink-0">Expired</span>
-                @elseif($ws === 'expiring')
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-rose-100 text-rose-700 shrink-0">Expiring soon</span>
-                @elseif($ws === 'expiring-soon')
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-700 shrink-0">Expiring</span>
-                @elseif($ws === 'active')
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700 shrink-0">Active</span>
-                @endif
-            </div>
-        </x-bento-card>
-    </div>
-    @endif
-
-    <x-bento-card variant="hero" class="mb-4">
-        <p class="text-xs uppercase tracking-wide opacity-80 font-medium">30-day movement</p>
-        <div class="mt-3 h-20">
-            <x-sparkline :data="$movement30" color="#ffffff"/>
-        </div>
-    </x-bento-card>
-
-    <x-bento-card :padded="false">
-        <div class="px-6 py-4 border-b border-surface-border">
-            <h2 class="text-sm font-semibold text-ink-heading">Transaction History</h2>
-        </div>
-        @if($transactions->isEmpty())
-            <x-empty-state icon="document-text" title="No transactions yet" hint="Receipts and releases will appear here."/>
-        @else
-            <x-table :headers="['Type','Qty','From / To','Office','Date','Status','']">
-                @foreach($transactions as $tx)
-                    <x-table.row>
-                        <td class="px-6 py-3">
-                            @if($tx->type === 'received')
-                                <x-status-badge status="received">IN</x-status-badge>
-                            @else
-                                <x-status-badge status="released">OUT</x-status-badge>
-                            @endif
-                        </td>
-                        <td class="px-6 py-3 text-ink-body">{{ $tx->qty }} {{ $tx->unit }}</td>
-                        <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? $tx->received_from : $tx->receiver_name }}</td>
-                        <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? 'S&P Office' : $tx->released_to_office }}</td>
-                        <td class="px-6 py-3 text-ink-body">{{ $tx->type === 'received' ? $tx->date_received : $tx->date_released }}</td>
-                        <td class="px-6 py-3">
-                            @if($tx->type === 'received')
-                                <x-status-badge status="received"/>
-                            @elseif($tx->acknowledgment_status === 'acknowledged')
-                                <x-status-badge status="acknowledged"/>
-                            @else
-                                <x-status-badge status="pending"/>
-                            @endif
-                        </td>
-                        <td class="px-6 py-3 text-right">
-                            <a href="{{ route('transactions.show', $tx->id) }}" class="text-primary-600 hover:text-primary-700 text-xs font-medium">View →</a>
-                        </td>
-                    </x-table.row>
-                @endforeach
-            </x-table>
-        @endif
-    </x-bento-card>
-
-    {{-- Audit Log --}}
-    <x-bento-card :padded="false" class="mt-4">
-        <div class="px-6 py-4 border-b border-surface-border">
-            <h2 class="text-sm font-semibold text-ink-heading">Audit Log</h2>
-        </div>
-        @if($logs->isEmpty())
-            <x-empty-state icon="clipboard-document-list" title="No audit entries yet" hint="Quantity changes will appear here once inventory is updated."/>
-        @else
-            <div class="divide-y divide-surface-border">
-                @foreach($logs as $log)
-                    @php
-                        $isPositive = $log->qty_change > 0;
-                        $isZero     = $log->qty_change === 0;
-                        $actionIcon = match($log->action) {
-                            'approved_receive' => '✅',
-                            'approved_release' => '📤',
-                            'cancelled'        => '🚫',
-                            'rejected'         => '❌',
-                            default            => '📋',
-                        };
-                        $changeLabel = $isZero
-                            ? '±0 ' . $item->unit
-                            : ($isPositive ? '+' : '') . $log->qty_change . ' ' . $item->unit;
-                    @endphp
-                    <div class="px-6 py-3 flex items-center gap-4 text-sm">
-                        <span class="text-base w-5 shrink-0">{{ $actionIcon }}</span>
-                        <span class="font-medium text-ink-heading w-36 shrink-0">{{ $log->action }}</span>
-                        <span class="{{ $isPositive ? 'text-emerald-600' : ($isZero ? 'text-ink-muted' : 'text-rose-600') }} font-medium w-20 shrink-0">
-                            {{ $changeLabel }}
-                        </span>
-                        <span class="text-ink-muted w-32 shrink-0">
-                            {{ $log->qty_before }} → {{ $log->qty_after }}
-                        </span>
-                        <span class="text-ink-muted shrink-0">
-                            {{ $log->created_at?->format('M d, Y') ?? '—' }}
-                        </span>
-                        <span class="text-ink-muted shrink-0">
-                            {{ $log->user?->name ?? '—' }}
-                        </span>
-                        @if($log->note)
-                            <span class="text-ink-muted text-xs truncate">{{ $log->note }}</span>
-                        @endif
+                @if($logs->isEmpty())
+                    <x-empty-state icon="clipboard-document-list" title="No audit entries yet" hint="Quantity changes will appear here once inventory is updated."/>
+                @else
+                    <div class="divide-y divide-surface-border">
+                        @foreach($logs as $log)
+                            @php
+                                $isPositive = $log->qty_change > 0;
+                                $isZero     = $log->qty_change === 0;
+                                $actionIcon = match($log->action) {
+                                    'approved_receive' => '✅',
+                                    'approved_release' => '📤',
+                                    'cancelled'        => '🚫',
+                                    'rejected'         => '❌',
+                                    default            => '📋',
+                                };
+                                $changeLabel = $isZero
+                                    ? '±0 ' . $item->unit
+                                    : ($isPositive ? '+' : '') . $log->qty_change . ' ' . $item->unit;
+                            @endphp
+                            <div class="px-6 py-3 flex items-center gap-4 text-sm">
+                                <span class="text-base w-5 shrink-0">{{ $actionIcon }}</span>
+                                <span class="font-medium text-ink-heading w-36 shrink-0">{{ $log->action }}</span>
+                                <span class="{{ $isPositive ? 'text-emerald-600' : ($isZero ? 'text-ink-muted' : 'text-rose-600') }} font-medium w-20 shrink-0">
+                                    {{ $changeLabel }}
+                                </span>
+                                <span class="text-ink-muted w-32 shrink-0">
+                                    {{ $log->qty_before }} → {{ $log->qty_after }}
+                                </span>
+                                <span class="text-ink-muted shrink-0">
+                                    {{ $log->created_at?->format('M d, Y') ?? '—' }}
+                                </span>
+                                <span class="text-ink-muted shrink-0">
+                                    {{ $log->user?->name ?? '—' }}
+                                </span>
+                                @if($log->note)
+                                    <span class="text-ink-muted text-xs truncate">{{ $log->note }}</span>
+                                @endif
+                            </div>
+                        @endforeach
                     </div>
-                @endforeach
-            </div>
-        @endif
-    </x-bento-card>
+                @endif
+            </x-bento-card>
+        </div>{{-- /audit-log --}}
+
+    </div>{{-- /tab wrapper --}}
 </x-app-layout>
