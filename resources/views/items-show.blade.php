@@ -55,7 +55,7 @@
         </div>
 
         {{-- ── Overview Tab ── --}}
-        <div x-show="tab === 'overview'">
+        <div x-show="tab === 'overview'" x-cloak>
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <x-bento-card>
@@ -161,7 +161,7 @@
         </div>{{-- /overview --}}
 
         {{-- ── History Tab ── --}}
-        <div x-show="tab === 'history'">
+        <div x-show="tab === 'history'" x-cloak>
             <x-bento-card :padded="false">
                 <div class="px-6 py-4 border-b border-surface-border">
                     <h2 class="text-sm font-semibold text-ink-heading">Transaction History</h2>
@@ -203,7 +203,7 @@
         </div>{{-- /history --}}
 
         {{-- ── Audit Log Tab ── --}}
-        <div x-show="tab === 'audit-log'">
+        <div x-show="tab === 'audit-log'" x-cloak>
             <x-bento-card :padded="false">
                 <div class="px-6 py-4 border-b border-surface-border">
                     <h2 class="text-sm font-semibold text-ink-heading">Audit Log</h2>
