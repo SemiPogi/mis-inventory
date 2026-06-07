@@ -128,7 +128,7 @@
 
         {{-- Expiry tab --}}
         @if($expiringItems->isNotEmpty())
-        <div x-show="tab === 'expiry'">
+        <div x-show="tab === 'expiry'" x-cloak>
             <x-table :headers="['Item', 'Category', 'Stock', 'Expiry Date', 'Status']">
                 @foreach($expiringItems as $ei)
                     <x-table.row>
@@ -153,7 +153,7 @@
 
         {{-- Low Stock tab --}}
         @if($lowStockItems->isNotEmpty())
-        <div x-show="tab === 'low-stock'">
+        <div x-show="tab === 'low-stock'" x-cloak>
             <x-table :headers="['Item', 'Category', 'Current Stock', 'Min Stock', 'Status']">
                 @foreach($lowStockItems as $ls)
                     <x-table.row>
@@ -178,7 +178,7 @@
 
         {{-- Warranty tab --}}
         @if($warrantyItems->isNotEmpty())
-        <div x-show="tab === 'warranty'">
+        <div x-show="tab === 'warranty'" x-cloak>
             <x-table :headers="['Item', 'Category', 'Provider', 'Warranty Expiry', 'Status']">
                 @foreach($warrantyItems as $wi)
                     <x-table.row>
