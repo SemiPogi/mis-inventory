@@ -23,8 +23,8 @@
 
     {{-- Tab layout --}}
     <div x-data="{
-        tab: (window.location.hash ? window.location.hash.slice(1) : 'overview')
-    }" @hashchange.window="tab = (window.location.hash ? window.location.hash.slice(1) : 'overview')">
+        tab: (['overview','history','audit-log'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'overview')
+    }" @hashchange.window="tab = (['overview','history','audit-log'].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'overview')">
 
         {{-- Tab navigation --}}
         <div class="flex gap-0 mb-4 border-b border-surface-border">
